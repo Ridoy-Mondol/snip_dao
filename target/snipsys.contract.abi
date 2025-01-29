@@ -1,0 +1,273 @@
+{
+  "version": "eosio::abi/1.2",
+  "structs": [
+    {
+      "name": "APYTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "end",
+          "type": "uint64"
+        },
+        {
+          "name": "percent",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "AccountLevel",
+      "base": "",
+      "fields": [
+        {
+          "name": "index",
+          "type": "uint8"
+        },
+        {
+          "name": "minAmount",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "AccountsTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "lockedStake",
+          "type": "uint64"
+        },
+        {
+          "name": "totalStaked",
+          "type": "uint64"
+        },
+        {
+          "name": "level",
+          "type": "uint8"
+        },
+        {
+          "name": "lastRestake",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ArchiveStakesTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "reward",
+          "type": "uint64"
+        },
+        {
+          "name": "lastUpdate",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ConfigTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "key",
+          "type": "uint64"
+        },
+        {
+          "name": "config",
+          "type": "StakingConfig"
+        }
+      ]
+    },
+    {
+      "name": "LockingPeriod",
+      "base": "",
+      "fields": [
+        {
+          "name": "months",
+          "type": "uint8"
+        },
+        {
+          "name": "multiplier",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "StakesTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "reward",
+          "type": "uint64"
+        },
+        {
+          "name": "lastUpdate",
+          "type": "uint64"
+        },
+        {
+          "name": "lockedStart",
+          "type": "uint64"
+        },
+        {
+          "name": "lockedTill",
+          "type": "uint64"
+        },
+        {
+          "name": "lockingPeriod",
+          "type": "uint8"
+        },
+        {
+          "name": "multiplier",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "StakingConfig",
+      "base": "",
+      "fields": [
+        {
+          "name": "lockingPeriods",
+          "type": "LockingPeriod[]"
+        },
+        {
+          "name": "levelsDef",
+          "type": "AccountLevel[]"
+        },
+        {
+          "name": "rewardSourceAccount",
+          "type": "name"
+        },
+        {
+          "name": "rewardSourceContract",
+          "type": "name"
+        },
+        {
+          "name": "distributedRewardsForYear",
+          "type": "asset"
+        },
+        {
+          "name": "yearStart",
+          "type": "uint64"
+        },
+        {
+          "name": "isPaused",
+          "type": "bool"
+        },
+        {
+          "name": "userStakeLimit",
+          "type": "uint64"
+        },
+        {
+          "name": "restakeTimeLimit",
+          "type": "uint64"
+        },
+        {
+          "name": "restrictToSymbol",
+          "type": "symbol"
+        }
+      ]
+    },
+    {
+      "name": "stake.arch",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "reward",
+          "type": "uint64"
+        },
+        {
+          "name": "lastUpdate",
+          "type": "uint64"
+        }
+      ]
+    }
+  ],
+  "types": [],
+  "actions": [
+    {
+      "name": "stake.arch",
+      "type": "stake.arch",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+    {
+      "name": "accounts",
+      "type": "AccountsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "apy",
+      "type": "APYTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "archstk",
+      "type": "ArchiveStakesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "config",
+      "type": "ConfigTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "stakes",
+      "type": "StakesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    }
+  ],
+  "ricardian_clauses": [],
+  "variants": [],
+  "action_results": [],
+  "abi_extensions": [],
+  "error_messages": []
+}

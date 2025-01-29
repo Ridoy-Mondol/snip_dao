@@ -1,0 +1,434 @@
+{
+  "version": "eosio::abi/1.2",
+  "structs": [
+    {
+      "name": "APYTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "end",
+          "type": "uint64"
+        },
+        {
+          "name": "percent",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "AccountLevel",
+      "base": "",
+      "fields": [
+        {
+          "name": "index",
+          "type": "uint8"
+        },
+        {
+          "name": "minAmount",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "AccountsTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "lockedStake",
+          "type": "uint64"
+        },
+        {
+          "name": "totalStaked",
+          "type": "uint64"
+        },
+        {
+          "name": "level",
+          "type": "uint8"
+        },
+        {
+          "name": "lastRestake",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ArchiveStakesTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "reward",
+          "type": "uint64"
+        },
+        {
+          "name": "lastUpdate",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "Balance",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "tokens",
+          "type": "extended_asset[]"
+        },
+        {
+          "name": "nfts",
+          "type": "uint64[]"
+        }
+      ]
+    },
+    {
+      "name": "ConfigTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "key",
+          "type": "uint64"
+        },
+        {
+          "name": "config",
+          "type": "StakingConfig"
+        }
+      ]
+    },
+    {
+      "name": "LockingPeriod",
+      "base": "",
+      "fields": [
+        {
+          "name": "months",
+          "type": "uint8"
+        },
+        {
+          "name": "multiplier",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "StakesTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "start",
+          "type": "uint64"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "reward",
+          "type": "uint64"
+        },
+        {
+          "name": "lastUpdate",
+          "type": "uint64"
+        },
+        {
+          "name": "lockedStart",
+          "type": "uint64"
+        },
+        {
+          "name": "lockedTill",
+          "type": "uint64"
+        },
+        {
+          "name": "lockingPeriod",
+          "type": "uint8"
+        },
+        {
+          "name": "multiplier",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "StakingConfig",
+      "base": "",
+      "fields": [
+        {
+          "name": "lockingPeriods",
+          "type": "LockingPeriod[]"
+        },
+        {
+          "name": "levelsDef",
+          "type": "AccountLevel[]"
+        },
+        {
+          "name": "rewardSourceAccount",
+          "type": "name"
+        },
+        {
+          "name": "rewardSourceContract",
+          "type": "name"
+        },
+        {
+          "name": "distributedRewardsForYear",
+          "type": "asset"
+        },
+        {
+          "name": "yearStart",
+          "type": "uint64"
+        },
+        {
+          "name": "isPaused",
+          "type": "bool"
+        },
+        {
+          "name": "userStakeLimit",
+          "type": "uint64"
+        },
+        {
+          "name": "restakeTimeLimit",
+          "type": "uint64"
+        },
+        {
+          "name": "restrictToSymbol",
+          "type": "symbol"
+        }
+      ]
+    },
+    {
+      "name": "apy.add",
+      "base": "",
+      "fields": [
+        {
+          "name": "apy",
+          "type": "float32"
+        }
+      ]
+    },
+    {
+      "name": "gov.chgcfg",
+      "base": "",
+      "fields": [
+        {
+          "name": "config",
+          "type": "StakingConfig"
+        }
+      ]
+    },
+    {
+      "name": "rwrds.claim",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        }
+      ]
+    },
+    {
+      "name": "rwrds.rstk",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "lockPeriod",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "name": "stake.lck",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "stakeKey",
+          "type": "uint64"
+        },
+        {
+          "name": "lockPeriod",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "name": "stake.lcklst",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "lockPeriod",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "name": "stake.restk",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "stakeKey",
+          "type": "uint64"
+        },
+        {
+          "name": "newLockingPeriod",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "name": "stake.unstk",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "stakeKey",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "stake.updt",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "stakeKey",
+          "type": "uint64"
+        }
+      ]
+    }
+  ],
+  "types": [],
+  "actions": [
+    {
+      "name": "apy.add",
+      "type": "apy.add",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "gov.chgcfg",
+      "type": "gov.chgcfg",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "rwrds.claim",
+      "type": "rwrds.claim",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "rwrds.rstk",
+      "type": "rwrds.rstk",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "stake.lck",
+      "type": "stake.lck",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "stake.lcklst",
+      "type": "stake.lcklst",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "stake.restk",
+      "type": "stake.restk",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "stake.unstk",
+      "type": "stake.unstk",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "stake.updt",
+      "type": "stake.updt",
+      "ricardian_contract": ""
+    }
+  ],
+  "tables": [
+    {
+      "name": "accounts",
+      "type": "AccountsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "apy",
+      "type": "APYTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "archstk",
+      "type": "ArchiveStakesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "balances",
+      "type": "Balance",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "config",
+      "type": "ConfigTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "stakes",
+      "type": "StakesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    }
+  ],
+  "ricardian_clauses": [],
+  "variants": [],
+  "action_results": [],
+  "abi_extensions": [],
+  "error_messages": []
+}
