@@ -6,7 +6,8 @@
     "build": "npx proton-asc snipstk.contract.ts",
     "build:snipsys": "npx proton-asc snipsys.contract.ts",
     "build:snipreward": "npx proton-asc snipreward.contract.ts",
-    "playground": "bun run build && cross-env LOG_LEVEL=debug ts-node ./playground.ts",
+    "build:snipvote": "npx proton-asc snipvote.contract.ts",
+    "playground": "cross-env LOG_LEVEL=debug ts-node ./playground.ts",
     "types:bc": "bunx abi2ts xtokens -f ./tests/xtokens/xtokens.abi > ./tests/interfaces/xtokens.ts && bunx abi2ts snipstk -f ./target/snipstk.contract.abi > ./tests/interfaces/snipstk.contract.ts",
     "test": "bun run build && cross-env ts-mocha  tests/suites/index.spec.ts --require tests/utils"
   },
