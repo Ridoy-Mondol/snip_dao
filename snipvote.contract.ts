@@ -25,7 +25,7 @@ export class snipvoting extends Contract {
     //  let allowedUser1 = Name.fromString("admin1");
     //  let allowedUser2 = Name.fromString("admin2");
 
-     requireAuth(this.receiver);
+    //  requireAuth(this.receiver);
 
      let existingElection = this.electionsTable.get(Name.fromString(electionName).N);
 
@@ -47,7 +47,7 @@ export class snipvoting extends Contract {
        registrationEndTime,
        candidateStakeAmount,
        voterStakeAmount,
-       "upcoming"
+       "upcoming",
      );
 
      this.electionsTable.store(newElection, this.receiver);
@@ -108,7 +108,7 @@ export class snipvoting extends Contract {
    
   // action to register candidates for election
    @action("registercand")
-   registerCandidate(account: Name, electionName: string, description: string): void {
+   registerCandidate(account: Name, userId: string, electionName: string, description: string): void {
       requireAuth(account);
       
       let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -132,6 +132,7 @@ export class snipvoting extends Contract {
       
       let newCandidate = new CandidatesTable(
         account,
+        userId,
         electionName,
         0,
         description,
@@ -140,6 +141,12 @@ export class snipvoting extends Contract {
       );
 
       this.candidatesTable.store(newCandidate, this.receiver);
+      
+      if (election) {
+        election.candidates.push(account);
+        this.electionsTable.update(election, this.receiver);
+      }
+
    }
    
    // action to withdraw candidates from election
@@ -161,11 +168,23 @@ export class snipvoting extends Contract {
       if (candidate) {
         this.candidatesTable.remove(candidate);
       }
+
+      if (election) {
+        let filteredCandidates: Name[] = [];
+        for (let i = 0; i < election.candidates.length; i++) {
+          if (election.candidates[i] != account) {
+            filteredCandidates.push(election.candidates[i]);
+          }
+        }
+        election.candidates = filteredCandidates;
+
+        this.electionsTable.update(election, this.receiver);
+      }
    }
    
   // action to vote in election
    @action("vote")
-   vote(voter: Name, candidate: Name, electionName: string): void {
+   vote(voter: Name, userId: string, candidate: Name, electionName: string): void {
       requireAuth(voter);
 
       let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -198,6 +217,7 @@ export class snipvoting extends Contract {
 
       let voterData = new VotersTable(
         voter,
+        userId,
         electionName,
         candidate,
         currentTime,
@@ -206,7 +226,8 @@ export class snipvoting extends Contract {
       this.votersTable.store(voterData, this.receiver);
       
       if(election) {
-        election.status = "ongoing"
+        election.status = "ongoing",
+        election.totalVote += 1;
         this.electionsTable.update(election, this.receiver);
       }
    }
@@ -254,6 +275,7 @@ export class snipvoting extends Contract {
         let candidate = topCandidates[i];
         let winnerEntry = new WinnersTable(
           candidate.account,
+          candidate.userId,
           candidate.totalVotes,
           electionName,
           rank,
@@ -262,16 +284,17 @@ export class snipvoting extends Contract {
         this.winnersTable.store(winnerEntry, this.receiver);
         rank++;
       }      
-
+      
       let foundingMembers: Name[] = [
         Name.fromString("founder1"),
         Name.fromString("founder2"),
-      ]
+      ]     
 
       for (let i = 0; i < foundingMembers.length; i++) {
-        let founer = foundingMembers[i];
+        let founder = foundingMembers[i];
         let founderEntry = new WinnersTable(
-          founer,
+          founder,
+          "",
           0,
           electionName,
           rank,
@@ -311,7 +334,7 @@ export class snipvoting extends Contract {
         0, 
         0,
         startTime,
-        endTime
+        endTime,
       );
 
       this.recallVoteTable.store(recallEntry, this.receiver);
@@ -319,7 +342,7 @@ export class snipvoting extends Contract {
    
   // recall vote action
    @action("recall")
-   recallVote(voter: Name, councilMember: Name, electionName: string, voteToReplace: boolean): void {
+   recallVote(voter: Name, userId: string, councilMember: Name, electionName: string, voteToReplace: boolean): void {
     requireAuth(voter);
 
     let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -358,6 +381,7 @@ export class snipvoting extends Contract {
 
     let recallVoter = new RecallVotersTable(
       voter,
+      userId,
       councilMember,
       electionName,
       voteToReplace,
@@ -445,6 +469,7 @@ export class snipvoting extends Contract {
 			if (highestVotedCandidate !== null) {
 				let newCouncilMember = new WinnersTable(
 					highestVotedCandidate.account,
+          highestVotedCandidate.userId,
 					highestVotedCandidate.totalVotes,
 					electionName,
 					removedRank

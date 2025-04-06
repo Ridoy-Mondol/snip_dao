@@ -5,6 +5,7 @@ export class RecallVotersTable extends Table {
 
     constructor (
         public voter: Name = new Name(),
+        public userId: string = "",
         public councilMember: Name = new Name(),
         public electionName: string = "",
         public votedToReplace: boolean = true,

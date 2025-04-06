@@ -5,6 +5,7 @@ export class WinnersTable extends Table {
 
     constructor (
         public winner: Name = new Name(),
+        public userId: string = "",
         public totalVotes: u64 = 0,
         public electionName: string = "",
         public rank: u8 = 0,

@@ -14,6 +14,7 @@ export class VotersTable implements _chain.MultiIndexValue {
 
     constructor(
         public account: Name = new Name(),
+        public userId: string = "",
         public electionName: string = "",
         public votedCandidate: Name = new Name(),
         public voteTime: u64 = 0,
@@ -34,6 +35,7 @@ export class VotersTable implements _chain.MultiIndexValue {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.account);
+        enc.packString(this.userId);
         enc.packString(this.electionName);
         enc.pack(this.votedCandidate);
         enc.packNumber<u64>(this.voteTime);
@@ -48,6 +50,7 @@ export class VotersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.account = obj;
         }
+        this.userId = dec.unpackString();
         this.electionName = dec.unpackString();
         
         {
@@ -62,6 +65,7 @@ export class VotersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.account.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += this.votedCandidate.getSize();
         size += sizeof<u64>();

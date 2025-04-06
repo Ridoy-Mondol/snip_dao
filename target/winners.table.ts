@@ -14,6 +14,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
 
     constructor (
         public winner: Name = new Name(),
+        public userId: string = "",
         public totalVotes: u64 = 0,
         public electionName: string = "",
         public rank: u8 = 0,
@@ -34,6 +35,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.winner);
+        enc.packString(this.userId);
         enc.packNumber<u64>(this.totalVotes);
         enc.packString(this.electionName);
         enc.packNumber<u8>(this.rank);
@@ -49,6 +51,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.winner = obj;
         }
+        this.userId = dec.unpackString();
         this.totalVotes = dec.unpackNumber<u64>();
         this.electionName = dec.unpackString();
         this.rank = dec.unpackNumber<u8>();
@@ -59,6 +62,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.winner.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += sizeof<u64>();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<u8>();

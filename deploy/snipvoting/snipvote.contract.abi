@@ -90,6 +90,10 @@
           "type": "name"
         },
         {
+          "name": "userId",
+          "type": "string"
+        },
+        {
           "name": "electionName",
           "type": "string"
         },
@@ -160,6 +164,14 @@
         {
           "name": "status",
           "type": "string"
+        },
+        {
+          "name": "totalVote",
+          "type": "uint64"
+        },
+        {
+          "name": "candidates",
+          "type": "name[]"
         }
       ]
     },
@@ -184,6 +196,10 @@
         {
           "name": "voter",
           "type": "name"
+        },
+        {
+          "name": "userId",
+          "type": "string"
         },
         {
           "name": "councilMember",
@@ -326,6 +342,10 @@
           "type": "name"
         },
         {
+          "name": "userId",
+          "type": "string"
+        },
+        {
           "name": "electionName",
           "type": "string"
         },
@@ -346,6 +366,10 @@
         {
           "name": "winner",
           "type": "name"
+        },
+        {
+          "name": "userId",
+          "type": "string"
         },
         {
           "name": "totalVotes",
@@ -435,6 +459,10 @@
           "type": "name"
         },
         {
+          "name": "userId",
+          "type": "string"
+        },
+        {
           "name": "councilMember",
           "type": "name"
         },
@@ -467,6 +495,10 @@
           "type": "name"
         },
         {
+          "name": "userId",
+          "type": "string"
+        },
+        {
           "name": "electionName",
           "type": "string"
         },
@@ -483,6 +515,10 @@
         {
           "name": "voter",
           "type": "name"
+        },
+        {
+          "name": "userId",
+          "type": "string"
         },
         {
           "name": "candidate",

@@ -26,7 +26,7 @@ export class snipvoting extends Contract {
     //  let allowedUser1 = Name.fromU64(0x3264E98400000000);
     //  let allowedUser2 = Name.fromU64(0x3264E98800000000);
 
-     requireAuth(this.receiver);
+    //  requireAuth(this.receiver);
 
      let existingElection = this.electionsTable.get(Name.fromString(electionName).N);
 
@@ -48,7 +48,7 @@ export class snipvoting extends Contract {
        registrationEndTime,
        candidateStakeAmount,
        voterStakeAmount,
-       "upcoming"
+       "upcoming",
      );
 
      this.electionsTable.store(newElection, this.receiver);
@@ -109,7 +109,7 @@ export class snipvoting extends Contract {
    
   // action to register candidates for election
    @action("registercand")
-   registerCandidate(account: Name, electionName: string, description: string): void {
+   registerCandidate(account: Name, userId: string, electionName: string, description: string): void {
       requireAuth(account);
       
       let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -133,6 +133,7 @@ export class snipvoting extends Contract {
       
       let newCandidate = new CandidatesTable(
         account,
+        userId,
         electionName,
         0,
         description,
@@ -141,6 +142,12 @@ export class snipvoting extends Contract {
       );
 
       this.candidatesTable.store(newCandidate, this.receiver);
+      
+      if (election) {
+        election.candidates.push(account);
+        this.electionsTable.update(election, this.receiver);
+      }
+
    }
    
    // action to withdraw candidates from election
@@ -162,11 +169,23 @@ export class snipvoting extends Contract {
       if (candidate) {
         this.candidatesTable.remove(candidate);
       }
+
+      if (election) {
+        let filteredCandidates: Name[] = [];
+        for (let i = 0; i < election.candidates.length; i++) {
+          if (election.candidates[i] != account) {
+            filteredCandidates.push(election.candidates[i]);
+          }
+        }
+        election.candidates = filteredCandidates;
+
+        this.electionsTable.update(election, this.receiver);
+      }
    }
    
   // action to vote in election
    @action("vote")
-   vote(voter: Name, candidate: Name, electionName: string): void {
+   vote(voter: Name, userId: string, candidate: Name, electionName: string): void {
       requireAuth(voter);
 
       let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -199,6 +218,7 @@ export class snipvoting extends Contract {
 
       let voterData = new VotersTable(
         voter,
+        userId,
         electionName,
         candidate,
         currentTime,
@@ -207,7 +227,8 @@ export class snipvoting extends Contract {
       this.votersTable.store(voterData, this.receiver);
       
       if(election) {
-        election.status = "ongoing"
+        election.status = "ongoing",
+        election.totalVote += 1;
         this.electionsTable.update(election, this.receiver);
       }
    }
@@ -255,6 +276,7 @@ export class snipvoting extends Contract {
         let candidate = topCandidates[i];
         let winnerEntry = new WinnersTable(
           candidate.account,
+          candidate.userId,
           candidate.totalVotes,
           electionName,
           rank,
@@ -263,16 +285,17 @@ export class snipvoting extends Contract {
         this.winnersTable.store(winnerEntry, this.receiver);
         rank++;
       }      
-
+      
       let foundingMembers: Name[] = [
         Name.fromU64(0x5D3534AAE1000000),
         Name.fromU64(0x5D3534AAE2000000),
-      ]
+      ]     
 
       for (let i = 0; i < foundingMembers.length; i++) {
-        let founer = foundingMembers[i];
+        let founder = foundingMembers[i];
         let founderEntry = new WinnersTable(
-          founer,
+          founder,
+          "",
           0,
           electionName,
           rank,
@@ -312,7 +335,7 @@ export class snipvoting extends Contract {
         0, 
         0,
         startTime,
-        endTime
+        endTime,
       );
 
       this.recallVoteTable.store(recallEntry, this.receiver);
@@ -320,7 +343,7 @@ export class snipvoting extends Contract {
    
   // recall vote action
    @action("recall")
-   recallVote(voter: Name, councilMember: Name, electionName: string, voteToReplace: boolean): void {
+   recallVote(voter: Name, userId: string, councilMember: Name, electionName: string, voteToReplace: boolean): void {
     requireAuth(voter);
 
     let election = this.electionsTable.get(Name.fromString(electionName).N);
@@ -359,6 +382,7 @@ export class snipvoting extends Contract {
 
     let recallVoter = new RecallVotersTable(
       voter,
+      userId,
       councilMember,
       electionName,
       voteToReplace,
@@ -446,6 +470,7 @@ export class snipvoting extends Contract {
 			if (highestVotedCandidate !== null) {
 				let newCouncilMember = new WinnersTable(
 					highestVotedCandidate.account,
+          highestVotedCandidate.userId,
 					highestVotedCandidate.totalVotes,
 					electionName,
 					removedRank
@@ -533,6 +558,7 @@ class clearAllTablesAction implements _chain.Packer {
 class registerCandidateAction implements _chain.Packer {
     constructor (
         public account: _chain.Name | null = null,
+        public userId: string = "",
         public electionName: string = "",
         public description: string = "",
     ) {
@@ -541,6 +567,7 @@ class registerCandidateAction implements _chain.Packer {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.account!);
+        enc.packString(this.userId);
         enc.packString(this.electionName);
         enc.packString(this.description);
         return enc.getBytes();
@@ -554,6 +581,7 @@ class registerCandidateAction implements _chain.Packer {
             dec.unpack(obj);
             this.account! = obj;
         }
+        this.userId = dec.unpackString();
         this.electionName = dec.unpackString();
         this.description = dec.unpackString();
         return dec.getPos();
@@ -562,6 +590,7 @@ class registerCandidateAction implements _chain.Packer {
     getSize(): usize {
         let size: usize = 0;
         size += this.account!.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += _chain.Utils.calcPackedStringLength(this.description);
         return size;
@@ -605,6 +634,7 @@ class withdrawCandidateAction implements _chain.Packer {
 class voteAction implements _chain.Packer {
     constructor (
         public voter: _chain.Name | null = null,
+        public userId: string = "",
         public candidate: _chain.Name | null = null,
         public electionName: string = "",
     ) {
@@ -613,6 +643,7 @@ class voteAction implements _chain.Packer {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.voter!);
+        enc.packString(this.userId);
         enc.pack(this.candidate!);
         enc.packString(this.electionName);
         return enc.getBytes();
@@ -626,6 +657,7 @@ class voteAction implements _chain.Packer {
             dec.unpack(obj);
             this.voter! = obj;
         }
+        this.userId = dec.unpackString();
         
         {
             let obj = new _chain.Name();
@@ -639,6 +671,7 @@ class voteAction implements _chain.Packer {
     getSize(): usize {
         let size: usize = 0;
         size += this.voter!.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += this.candidate!.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         return size;
@@ -715,6 +748,7 @@ class createRecallVotingAction implements _chain.Packer {
 class recallVoteAction implements _chain.Packer {
     constructor (
         public voter: _chain.Name | null = null,
+        public userId: string = "",
         public councilMember: _chain.Name | null = null,
         public electionName: string = "",
         public voteToReplace: boolean = 0,
@@ -724,6 +758,7 @@ class recallVoteAction implements _chain.Packer {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.voter!);
+        enc.packString(this.userId);
         enc.pack(this.councilMember!);
         enc.packString(this.electionName);
         enc.packNumber<boolean>(this.voteToReplace);
@@ -738,6 +773,7 @@ class recallVoteAction implements _chain.Packer {
             dec.unpack(obj);
             this.voter! = obj;
         }
+        this.userId = dec.unpackString();
         
         {
             let obj = new _chain.Name();
@@ -752,6 +788,7 @@ class recallVoteAction implements _chain.Packer {
     getSize(): usize {
         let size: usize = 0;
         size += this.voter!.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += this.councilMember!.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<boolean>();
@@ -806,7 +843,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0xBA98EC655741A690) {//registercand
             const args = new registerCandidateAction();
             args.unpack(actionData);
-            mycontract.registerCandidate(args.account!,args.electionName,args.description);
+            mycontract.registerCandidate(args.account!,args.userId,args.electionName,args.description);
         }
 		if (action == 0xE3B2D4DCDC41A690) {//withdrawcand
             const args = new withdrawCandidateAction();
@@ -816,7 +853,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0xDD32A00000000000) {//vote
             const args = new voteAction();
             args.unpack(actionData);
-            mycontract.vote(args.voter!,args.candidate!,args.electionName);
+            mycontract.vote(args.voter!,args.userId,args.candidate!,args.electionName);
         }
 		if (action == 0xE3A7355C00000000) {//winner
             const args = new declareWinnersAction();
@@ -831,7 +868,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0xBA9068C400000000) {//recall
             const args = new recallVoteAction();
             args.unpack(actionData);
-            mycontract.recallVote(args.voter!,args.councilMember!,args.electionName,args.voteToReplace);
+            mycontract.recallVote(args.voter!,args.userId,args.councilMember!,args.electionName,args.voteToReplace);
         }
 		if (action == 0xBA9068C6EAC6A390) {//recallresult
             const args = new recallResultAction();

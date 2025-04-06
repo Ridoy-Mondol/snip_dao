@@ -12,6 +12,8 @@ export class ElectionsTable extends Table {
         public candidateStakeAmount: u64 = 0,
         public voterStakeAmount: u64 = 0,
         public status: string = "upcoming", // Status: upcoming, ongoing, completed
+        public totalVote: u64 = 0,
+        public candidates: Name[] = [],
     ) {
         super()
     }

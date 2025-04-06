@@ -14,6 +14,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
 
     constructor (
         public voter: Name = new Name(),
+        public userId: string = "",
         public councilMember: Name = new Name(),
         public electionName: string = "",
         public votedToReplace: boolean = true,
@@ -34,6 +35,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.voter);
+        enc.packString(this.userId);
         enc.pack(this.councilMember);
         enc.packString(this.electionName);
         enc.packNumber<boolean>(this.votedToReplace);
@@ -49,6 +51,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.voter = obj;
         }
+        this.userId = dec.unpackString();
         
         {
             let obj = new Name();
@@ -64,6 +67,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.voter.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += this.councilMember.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<boolean>();

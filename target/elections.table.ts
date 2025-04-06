@@ -21,6 +21,8 @@ export class ElectionsTable implements _chain.MultiIndexValue {
         public candidateStakeAmount: u64 = 0,
         public voterStakeAmount: u64 = 0,
         public status: string = "upcoming", // Status: upcoming, ongoing, completed
+        public totalVote: u64 = 0,
+        public candidates: Name[] = [],
     ) {
         
     }
@@ -44,6 +46,8 @@ export class ElectionsTable implements _chain.MultiIndexValue {
         enc.packNumber<u64>(this.candidateStakeAmount);
         enc.packNumber<u64>(this.voterStakeAmount);
         enc.packString(this.status);
+        enc.packNumber<u64>(this.totalVote);
+        enc.packObjectArray(this.candidates);
         return enc.getBytes();
     }
     
@@ -57,6 +61,18 @@ export class ElectionsTable implements _chain.MultiIndexValue {
         this.candidateStakeAmount = dec.unpackNumber<u64>();
         this.voterStakeAmount = dec.unpackNumber<u64>();
         this.status = dec.unpackString();
+        this.totalVote = dec.unpackNumber<u64>();
+        
+    {
+        let length = <i32>dec.unpackLength();
+        this.candidates = new Array<Name>(length)
+        for (let i=0; i<length; i++) {
+            let obj = new Name();
+            this.candidates[i] = obj;
+            dec.unpack(obj);
+        }
+    }
+
         return dec.getPos();
     }
 
@@ -70,6 +86,12 @@ export class ElectionsTable implements _chain.MultiIndexValue {
         size += sizeof<u64>();
         size += sizeof<u64>();
         size += _chain.Utils.calcPackedStringLength(this.status);
+        size += sizeof<u64>();
+        size += _chain.calcPackedVarUint32Length(this.candidates.length);
+        for (let i=0; i<this.candidates.length; i++) {
+            size += this.candidates[i].getSize();
+        }
+
         return size;
     }
 

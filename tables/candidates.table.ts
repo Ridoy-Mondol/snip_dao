@@ -5,6 +5,7 @@ export class CandidatesTable extends Table {
 
     constructor(
         public account: Name = new Name(),
+        public userId: string = "",
         public electionName: string = "",
         public totalVotes: u64 = 0,
         public description: string = "",
