@@ -1,5 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 
 
@@ -14,7 +15,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
 
     constructor (
         public winner: Name = new Name(),
-        public userId: string = "",
+        public userName: string = "", 
         public totalVotes: u64 = 0,
         public electionName: string = "",
         public rank: u8 = 0,
@@ -25,17 +26,17 @@ export class WinnersTable implements _chain.MultiIndexValue {
 
     @primary
     get by_winner_and_election(): u64 {
-        return this.winner.N + Name.fromString(this.electionName).N;
+        return this.winner.N + stringToU64(this.electionName);
     }
 
     set by_winner_and_election(value: u64) {
-        this.winner = Name.fromU64(value);
+        
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.winner);
-        enc.packString(this.userId);
+        enc.packString(this.userName);
         enc.packNumber<u64>(this.totalVotes);
         enc.packString(this.electionName);
         enc.packNumber<u8>(this.rank);
@@ -51,7 +52,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.winner = obj;
         }
-        this.userId = dec.unpackString();
+        this.userName = dec.unpackString();
         this.totalVotes = dec.unpackNumber<u64>();
         this.electionName = dec.unpackString();
         this.rank = dec.unpackNumber<u8>();
@@ -62,7 +63,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.winner.getSize();
-        size += _chain.Utils.calcPackedStringLength(this.userId);
+        size += _chain.Utils.calcPackedStringLength(this.userName);
         size += sizeof<u64>();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<u8>();

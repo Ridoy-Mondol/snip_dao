@@ -1,14 +1,14 @@
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 @table('candidates')
 export class CandidatesTable extends Table {
 
     constructor(
         public account: Name = new Name(),
-        public userId: string = "",
+        public userName: string = "",  // this is snipverse account userName
         public electionName: string = "",
         public totalVotes: u64 = 0,
-        public description: string = "",
         public status: string = "active", // Status: active, withdrawn
         public registrationTime: u64 = 0,
     ) {
@@ -17,10 +17,10 @@ export class CandidatesTable extends Table {
 
     @primary
     get by_account_and_election(): u64 {
-        return this.account.N + Name.fromString(this.electionName).N;
+        return this.account.N + stringToU64(this.electionName);
     }
 
     set by_account_and_election(value: u64) {
-        this.account = Name.fromU64(value);
+        
     }
 }

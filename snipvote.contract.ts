@@ -1,5 +1,6 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
 import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable } from "./tables";
+import {stringToU64} from './utils'
 
 @contract
 export class snipvoting extends Contract {
@@ -17,7 +18,7 @@ export class snipvoting extends Contract {
   private recallVotersTable: TableStore<RecallVotersTable> = new TableStore<RecallVotersTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
-  
+
   // action to create election by founding members
   @action("createelect")
   createElection(electionName: string, startTime: u64, endTime: u64, registrationStartTime: u64, registrationEndTime: u64, candidateStakeAmount: u64, voterStakeAmount: u64): void {
@@ -27,7 +28,7 @@ export class snipvoting extends Contract {
 
     //  requireAuth(this.receiver);
 
-     let existingElection = this.electionsTable.get(Name.fromString(electionName).N);
+    let existingElection = this.electionsTable.get(stringToU64(electionName));
 
      check(!existingElection, "Election with this name already exists");
 
@@ -52,7 +53,8 @@ export class snipvoting extends Contract {
 
      this.electionsTable.store(newElection, this.receiver);
   }
-
+  
+  // this action is for clearing table data. before changing table structure I use this to clear table data
   @action("cleardata")
   clearAllTables(): void {
     requireAuth(this.receiver);
@@ -108,10 +110,10 @@ export class snipvoting extends Contract {
    
   // action to register candidates for election
    @action("registercand")
-   registerCandidate(account: Name, userId: string, electionName: string, description: string): void {
+   registerCandidate(account: Name, userName: string, electionName: string): void {
       requireAuth(account);
       
-      let election = this.electionsTable.get(Name.fromString(electionName).N);
+      let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let currentTime = currentTimeSec();
@@ -126,16 +128,15 @@ export class snipvoting extends Contract {
         check(userStake!.totalStaked >= election.candidateStakeAmount, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
       }
       
-      let existingCandidate = this.candidatesTable.get(account.N + Name.fromString(electionName).N);
-      
+      let existingCandidate = this.candidatesTable.get(account.N + stringToU64(electionName));
+
       check(existingCandidate === null, "Candidate is already registered");
       
       let newCandidate = new CandidatesTable(
         account,
-        userId,
+        userName,
         electionName,
         0,
-        description,
         "active",
         currentTime,
       );
@@ -154,10 +155,10 @@ export class snipvoting extends Contract {
    withdrawCandidate(account: Name, electionName: string): void {
       requireAuth(account);
 
-      let election = this.electionsTable.get(Name.fromString(electionName).N);
+      let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
-      let candidate = this.candidatesTable.get(account.N + Name.fromString(electionName).N);
+      let candidate = this.candidatesTable.get(account.N + stringToU64(electionName));
       check(candidate !== null, "Candidate is not registered");
 
       let currentTime = currentTimeSec();
@@ -184,10 +185,10 @@ export class snipvoting extends Contract {
    
   // action to vote in election
    @action("vote")
-   vote(voter: Name, userId: string, candidate: Name, electionName: string): void {
+   vote(voter: Name, userName: string, candidate: Name, electionName: string): void {
       requireAuth(voter);
 
-      let election = this.electionsTable.get(Name.fromString(electionName).N);
+      let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let currentTime = currentTimeSec();
@@ -196,7 +197,7 @@ export class snipvoting extends Contract {
         check(currentTime <= election.endTime, "Voting period is closed");
       }
 
-      let voterExist = this.votersTable.get(voter.N + Name.fromString(electionName).N);
+      let voterExist = this.votersTable.get(voter.N + stringToU64(electionName));
       check(voterExist === null, "You have already voted in this election");
 
       if (election && election.voterStakeAmount > 0) {
@@ -206,8 +207,7 @@ export class snipvoting extends Contract {
         check(voterStake!.totalStaked >= election.voterStakeAmount, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
       }
     
-
-      let candidateData = this.candidatesTable.get(candidate.N + Name.fromString(electionName).N);
+      let candidateData = this.candidatesTable.get(candidate.N + stringToU64(electionName));
       check(candidateData !== null, "Candidate not found");
       
       if (candidateData) {
@@ -217,7 +217,7 @@ export class snipvoting extends Contract {
 
       let voterData = new VotersTable(
         voter,
-        userId,
+        userName,
         electionName,
         candidate,
         currentTime,
@@ -237,7 +237,7 @@ export class snipvoting extends Contract {
    declareWinners(electionName: string): void {
       requireAuth(this.receiver);
 
-      let election = this.electionsTable.get(Name.fromString(electionName).N);
+      let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let currentTime = currentTimeSec();
@@ -275,7 +275,7 @@ export class snipvoting extends Contract {
         let candidate = topCandidates[i];
         let winnerEntry = new WinnersTable(
           candidate.account,
-          candidate.userId,
+          candidate.userName,
           candidate.totalVotes,
           electionName,
           rank,
@@ -315,13 +315,13 @@ export class snipvoting extends Contract {
    createRecallVoting ( councilMember: Name, electionName: string, startTime: u64, endTime: u64 ): void {
       requireAuth(this.receiver);
 
-      let election = this.electionsTable.get(Name.fromString(electionName).N);
+      let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
-      let member = this.winnersTable.get(councilMember.N + Name.fromString(electionName).N);
+      let member = this.winnersTable.get(councilMember.N + stringToU64(electionName));
       check(member !== null, "Council member not found");
 
-      let recallExist = this.recallVoteTable.get(councilMember.N + Name.fromString(electionName).N);
+      let recallExist = this.recallVoteTable.get(councilMember.N + stringToU64(electionName));
       check(recallExist === null, "Recall vote already created");
 
       let currentTime = currentTimeSec();
@@ -342,13 +342,13 @@ export class snipvoting extends Contract {
    
   // recall vote action
    @action("recall")
-   recallVote(voter: Name, userId: string, councilMember: Name, electionName: string, voteToReplace: boolean): void {
+   recallVote(voter: Name, userName: string, councilMember: Name, electionName: string, voteToReplace: boolean): void {
     requireAuth(voter);
 
-    let election = this.electionsTable.get(Name.fromString(electionName).N);
+    let election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election names do not match");
 
-    let member = this.winnersTable.get(councilMember.N + Name.fromString(electionName).N);
+    let member = this.winnersTable.get(councilMember.N + stringToU64(electionName));
     check(member !== null, "Council member not found");
 
     if (election && election.voterStakeAmount > 0) {
@@ -358,7 +358,7 @@ export class snipvoting extends Contract {
       check(voterStake!.totalStaked >= election.voterStakeAmount, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
     } 
 
-    let recallEntry = this.recallVoteTable.get(councilMember.N + Name.fromString(electionName).N);
+    let recallEntry = this.recallVoteTable.get(councilMember.N + stringToU64(electionName));
     check(recallEntry !== null, "Recall vote not started for this member");
 
     let currentTime = currentTimeSec();
@@ -367,7 +367,7 @@ export class snipvoting extends Contract {
       check(currentTime <= recallEntry.endTime, "Voting period has ended");
     }
     
-    let existingVote = this.recallVotersTable.get(voter.N + Name.fromString(electionName).N);
+    let existingVote = this.recallVotersTable.get(voter.N + stringToU64(electionName));
     check(existingVote === null, "You have already voted in this recall election");
     
     if (recallEntry) {
@@ -381,21 +381,20 @@ export class snipvoting extends Contract {
 
     let recallVoter = new RecallVotersTable(
       voter,
-      userId,
+      userName,
       councilMember,
       electionName,
       voteToReplace,
     )
     this.recallVotersTable.store(recallVoter, this.receiver);
    }
-  
 
   // action to determine candidates replaced or not
   @action("recallresult")
   recallResult(electionName: string): void {
     requireAuth(this.receiver);
 
-    let election = this.electionsTable.get(Name.fromString(electionName).N);
+    let election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election not found");
 
     let currentTime = currentTimeSec();
@@ -421,7 +420,7 @@ export class snipvoting extends Contract {
 		  // ✅ Ensure the recall vote supports replacing the member
       check(recallVote.replaceVotes > recallVote.keepVotes, "Not enough votes to replace the council member");
 
-			let councilMemberEntry = this.winnersTable.get(recallVote.councilMember.N + Name.fromString(electionName).N);
+      let councilMemberEntry = this.winnersTable.get(recallVote.councilMember.N + stringToU64(electionName));
       check(councilMemberEntry !== null, "Council member not found for recall");
 
 			let removedRank: u8 = 0;
@@ -451,7 +450,7 @@ export class snipvoting extends Contract {
           continue;
         }
 
-				let isAlreadyCouncil = this.winnersTable.get(candidate.account.N + Name.fromString(electionName).N);
+        let isAlreadyCouncil = this.winnersTable.get(candidate.account.N + stringToU64(electionName));
 
         if (isAlreadyCouncil !== null) {
           continue;
@@ -469,7 +468,7 @@ export class snipvoting extends Contract {
 			if (highestVotedCandidate !== null) {
 				let newCouncilMember = new WinnersTable(
 					highestVotedCandidate.account,
-          highestVotedCandidate.userId,
+          highestVotedCandidate.userName,
 					highestVotedCandidate.totalVotes,
 					electionName,
 					removedRank

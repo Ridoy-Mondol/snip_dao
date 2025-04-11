@@ -1,5 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 
 
@@ -14,7 +15,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
 
     constructor (
         public voter: Name = new Name(),
-        public userId: string = "",
+        public userName: string = "",
         public councilMember: Name = new Name(),
         public electionName: string = "",
         public votedToReplace: boolean = true,
@@ -25,17 +26,17 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
 
     @primary
     get by_voter_and_election(): u64 {
-        return this.voter.N + Name.fromString(this.electionName).N;
+        return this.voter.N + stringToU64(this.electionName);
     }
 
     set by_voter_and_election(value: u64) {
-        this.voter = Name.fromU64(value);
+        
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.voter);
-        enc.packString(this.userId);
+        enc.packString(this.userName);
         enc.pack(this.councilMember);
         enc.packString(this.electionName);
         enc.packNumber<boolean>(this.votedToReplace);
@@ -51,7 +52,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.voter = obj;
         }
-        this.userId = dec.unpackString();
+        this.userName = dec.unpackString();
         
         {
             let obj = new Name();
@@ -67,7 +68,7 @@ export class RecallVotersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.voter.getSize();
-        size += _chain.Utils.calcPackedStringLength(this.userId);
+        size += _chain.Utils.calcPackedStringLength(this.userName);
         size += this.councilMember.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<boolean>();

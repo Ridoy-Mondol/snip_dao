@@ -1,4 +1,5 @@
 import { Name, Table } from "proton-tsc";
+import {stringToU64} from '../utils'
 
 @table('elections')
 export class ElectionsTable extends Table {
@@ -20,10 +21,10 @@ export class ElectionsTable extends Table {
 
     @primary
     get by_electionName(): u64 {
-        return Name.fromString(this.electionName).N;
+        return stringToU64(this.electionName);
     }
 
     set by_electionName(value: u64) {
-        this.electionName = Name.fromU64(value).toString();
+        
     }
 }

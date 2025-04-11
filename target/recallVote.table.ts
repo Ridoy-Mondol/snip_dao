@@ -1,5 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 
 
@@ -24,11 +25,11 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
 
     @primary
     get by_member_and_election(): u64 {
-        return this.councilMember.N + Name.fromString(this.electionName).N;
+        return this.councilMember.N + stringToU64(this.electionName);
     }
 
     set by_member_and_election(value: u64) {
-        this.councilMember = Name.fromU64(value);
+        
     }
 
     pack(): u8[] {

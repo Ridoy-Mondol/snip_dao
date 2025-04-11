@@ -1,5 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 
 
@@ -14,7 +15,7 @@ export class VotersTable implements _chain.MultiIndexValue {
 
     constructor(
         public account: Name = new Name(),
-        public userId: string = "",
+        public userName: string = "", // this is snipverse account userName
         public electionName: string = "",
         public votedCandidate: Name = new Name(),
         public voteTime: u64 = 0,
@@ -24,18 +25,18 @@ export class VotersTable implements _chain.MultiIndexValue {
 
     @primary
     get by_account_and_election(): u64 {
-        return this.account.N + Name.fromString(this.electionName).N
+        return this.account.N + stringToU64(this.electionName);
     }
 
     set by_account_and_election(value: u64) {
-        this.account = Name.fromU64(value)
+        
     }
 
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.account);
-        enc.packString(this.userId);
+        enc.packString(this.userName);
         enc.packString(this.electionName);
         enc.pack(this.votedCandidate);
         enc.packNumber<u64>(this.voteTime);
@@ -50,7 +51,7 @@ export class VotersTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.account = obj;
         }
-        this.userId = dec.unpackString();
+        this.userName = dec.unpackString();
         this.electionName = dec.unpackString();
         
         {
@@ -65,7 +66,7 @@ export class VotersTable implements _chain.MultiIndexValue {
     getSize(): usize {
         let size: usize = 0;
         size += this.account.getSize();
-        size += _chain.Utils.calcPackedStringLength(this.userId);
+        size += _chain.Utils.calcPackedStringLength(this.userName);
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += this.votedCandidate.getSize();
         size += sizeof<u64>();

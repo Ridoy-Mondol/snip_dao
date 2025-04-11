@@ -90,7 +90,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
@@ -100,10 +100,6 @@
         {
           "name": "totalVotes",
           "type": "uint64"
-        },
-        {
-          "name": "description",
-          "type": "string"
         },
         {
           "name": "status",
@@ -198,7 +194,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
@@ -342,7 +338,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
@@ -368,7 +364,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
@@ -459,7 +455,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
@@ -495,15 +491,11 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
           "name": "electionName",
-          "type": "string"
-        },
-        {
-          "name": "description",
           "type": "string"
         }
       ]
@@ -517,7 +509,7 @@
           "type": "name"
         },
         {
-          "name": "userId",
+          "name": "userName",
           "type": "string"
         },
         {
