@@ -1,5 +1,5 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable } from "./tables";
 import {stringToU64} from './utils'
 
 @contract
@@ -16,6 +16,16 @@ export class snipvoting extends Contract {
   private recallVoteTable: TableStore<RecallVotesTable> = new TableStore<RecallVotesTable>(this.receiver, this.receiver);
 
   private recallVotersTable: TableStore<RecallVotersTable> = new TableStore<RecallVotersTable>(this.receiver, this.receiver);
+
+  private moderatorCandTable: TableStore<ModeratorCandTable> = new TableStore<ModeratorCandTable>(this.receiver, this.receiver);
+
+  private moderatorsTable: TableStore<ModeratorsTable> = new TableStore<ModeratorsTable>(this.receiver, this.receiver);
+
+  private moderatorVotersTable: TableStore<ModeratorVotersTable> = new TableStore<ModeratorVotersTable>(this.receiver, this.receiver);
+
+  private modRecallTable: TableStore<ModRecallTable> = new TableStore<ModRecallTable>(this.receiver, this.receiver);
+
+  private modRecallVotersTable: TableStore<ModRecallVotersTable> = new TableStore<ModRecallVotersTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -226,7 +236,9 @@ export class snipvoting extends Contract {
       this.votersTable.store(voterData, this.receiver);
       
       if(election) {
-        election.status = "ongoing",
+        if (election.status === "upcoming") {
+          election.status = "ongoing"
+        }
         election.totalVote += 1;
         this.electionsTable.update(election, this.receiver);
       }
@@ -236,13 +248,33 @@ export class snipvoting extends Contract {
    @action("winner")
    declareWinners(electionName: string): void {
       requireAuth(this.receiver);
+      requireAuth(Name.fromString("ahatashamul"));
+      requireAuth(Name.fromString("ahatashamul1"));
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let currentTime = currentTimeSec();
-      if (election) {
-        check(currentTime > election.endTime, "Election is still ongoing");
+      check(currentTime > election!.endTime, "Election is still ongoing");
+      
+      // expire all previous elections
+      let electionCursor = this.electionsTable.first();
+      while (electionCursor !== null) {
+        if (electionCursor.electionName !== electionName && electionCursor.status !== "expired") {
+          electionCursor.status = "expired";
+          this.electionsTable.update(electionCursor, this.receiver);
+        }
+        electionCursor = this.electionsTable.next(electionCursor);
+      }
+
+      // expire all previous winners
+      let winnerCursor = this.winnersTable.first();
+      while (winnerCursor !== null) {
+        if (winnerCursor.status === "active") {
+          winnerCursor.status = "expired";
+          this.winnersTable.update(winnerCursor, this.receiver);
+        }
+        winnerCursor = this.winnersTable.next(winnerCursor);
       }
 
       let allCandidates: CandidatesTable[] = [];
@@ -267,7 +299,6 @@ export class snipvoting extends Contract {
       let sortedCandidates = filteredCandidates.sort((a: CandidatesTable, b: CandidatesTable) => b.totalVotes as i32 - a.totalVotes as i32);
 
       let topCandidates = sortedCandidates.slice(0, 5);
-
       check(topCandidates.length > 0, "No winners found.");
 
       let rank: u8 = 1;
@@ -279,7 +310,8 @@ export class snipvoting extends Contract {
           candidate.totalVotes,
           electionName,
           rank,
-          false
+          false,
+          "active"
         );
         this.winnersTable.store(winnerEntry, this.receiver);
         rank++;
@@ -288,26 +320,30 @@ export class snipvoting extends Contract {
       let foundingMembers: Name[] = [
         Name.fromString("founder1"),
         Name.fromString("founder2"),
-      ]     
+      ];
+
+      let founderUsernames = new Map<string, string>();
+      founderUsernames.set("founder1", "Founder1");
+      founderUsernames.set("founder2", "Founder2");
 
       for (let i = 0; i < foundingMembers.length; i++) {
         let founder = foundingMembers[i];
+        let userName = founderUsernames.get(founder.toString()) || "";
         let founderEntry = new WinnersTable(
           founder,
-          "",
+          userName,
           0,
           electionName,
           rank,
-          true
+          true,
+          "active"
         );
         this.winnersTable.store(founderEntry, this.receiver);
         rank++;
       }      
 
-      if (election) {
-        election.status = "completed";
-        this.electionsTable.update(election, this.receiver);
-      }
+      election!.status = "ended";
+      this.electionsTable.update(election!, this.receiver);
    }
    
   // action to create recall vote by founding member
@@ -478,6 +514,180 @@ export class snipvoting extends Contract {
 	   }
     }
   }
+
+  // action to apply as moderator role
+  @action("modapply")
+  moderatorApply(account: Name, userName: string): void {
+     requireAuth(account);
+
+     let currentTime = currentTimeSec();
+
+     let userStake = this.accountTable.get(account.N);
+     check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
+     check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
+     
+     let existingCandidate = this.moderatorCandTable.get(account.N);
+
+     check(existingCandidate === null, "Candidate already applied");
+     
+     let newCandidate = new ModeratorCandTable(
+       account,
+       userName,
+       0,
+       0,
+       "pending",
+       currentTime,
+     );
+
+     this.moderatorCandTable.store(newCandidate, this.receiver);
+
+  }
+
+  // action to vote in moderator application
+  @action("modvote")
+  moderatorVote(voter: Name, candidate: Name, vote: string ): void {
+     requireAuth(voter);
+
+     let currentTime = currentTimeSec();
+     
+     // Only council members can vote
+     let validVoter = this.winnersTable.exists(voter.N);
+     check(validVoter === true, "Only council members can vote");
+
+     let voterExist = this.moderatorVotersTable.get(voter.N + candidate.N);
+     check(voterExist === null, "You have already voted for this candidate");
+   
+     let candidateData = this.moderatorCandTable.get(candidate.N);
+     check(candidateData !== null, "Candidate not found");
+     check(candidateData!.status === "pending", "Voting has ended for this candidate");
+
+     check(vote === "approve" || vote === "reject", "Vote must be 'approve' or 'reject'");
+     if (candidateData) {
+       if (vote === "approve") {
+         candidateData.approvedBy += 1;
+       } else {
+         candidateData.rejectedBy += 1;
+       }
+     }
+
+     let voterData = new ModeratorVotersTable(
+       voter,
+       candidate,
+       vote,
+       currentTime,
+     )
+
+     this.moderatorVotersTable.store(voterData, this.receiver);
+     
+     let moderatorData: ModeratorsTable | null = null;
+     if (candidateData) {
+      if (candidateData.approvedBy >= 5) {
+        candidateData.status = "approved";
+
+        moderatorData = new ModeratorsTable(
+          candidate,
+          candidateData.userName,
+          currentTime,
+        );
+
+         this.moderatorsTable.store(moderatorData, this.receiver);
+      } else if (candidateData.rejectedBy > 2 ) {
+        candidateData.status = "rejected";
+      }
+
+      this.moderatorCandTable.update(candidateData, this.receiver);
+     }
+  }
+
+  @action("modrecall")
+  initModRecall(moderator: Name, reason: string): void {
+    requireAuth(this.receiver);
+
+    let moderatorExist = this.moderatorsTable.get(moderator.N);
+    check(moderatorExist !== null, "Moderator not found");
+
+    let recallEntry: ModRecallTable[] = [];
+    let cursor = this.modRecallTable.first();
+    while (cursor !== null) {
+	    recallEntry.push(cursor);
+	    cursor = this.modRecallTable.next(cursor);
+    }
+
+    for (let i = 0; i < recallEntry.length; i++) {
+      if (
+        recallEntry[i].moderator === moderator &&
+        recallEntry[i].status !== "failed"
+      ) {
+        check(false, "Cannot create a new recall while another is in progress or already completed.");
+      }
+    }
+
+    const newRecallId = currentTimeSec();
+    const newRecall = new ModRecallTable(
+      newRecallId,
+      moderator,
+      reason,
+      0,
+      0,
+      "pending",
+    );
+
+    this.modRecallTable.store(newRecall, this.receiver);
+  }
+
+  @action('modrecalvote')
+  modRecallVote(voter: Name, recallId: u64, vote: string): void {
+    requireAuth(voter);
+
+    let currentTime = currentTimeSec();
+
+    let recall = this.modRecallTable.get(recallId);
+    check(recall !== null, "Recall vote not found for this moderator");
+    check(recall!.status === "pending", "This recall vote is no longer active");
+
+    let isCouncil = this.winnersTable.exists(voter.N);
+    check(isCouncil === true, "Only council members can vote on recalls");
+
+    const alreadyVoted = this.modRecallVotersTable.get(voter.N + recallId);
+    check(alreadyVoted === null, "You have already voted in this recall");
+
+    check(vote === "yes" || vote === "no", "Vote must be 'yes' or 'no'");
+
+    if (vote === "yes") {
+      recall!.yesVotes += 1;
+    } else {
+      recall!.noVotes += 1;
+    }
+
+    const voteData = new ModRecallVotersTable(
+      voter, 
+      recall!.moderator,
+      recallId, 
+      vote,
+      currentTime,
+    );
+    this.modRecallVotersTable.store(voteData, this.receiver);
+
+    if (recall!.yesVotes >= 4) {
+      recall!.status = "removed";
+  
+      const moderator = this.moderatorsTable.get(recall!.moderator.N);
+      if (moderator !== null) {
+        this.moderatorsTable.remove(moderator);
+      }
+  
+    } else if (recall!.noVotes >= 4) {
+      recall!.status = "failed";
+    }
+
+    this.modRecallTable.update(recall!, this.receiver);
+
+  }
+
+
+
+
+
 
 
 

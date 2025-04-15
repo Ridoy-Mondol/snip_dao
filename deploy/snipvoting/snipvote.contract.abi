@@ -186,6 +186,132 @@
       ]
     },
     {
+      "name": "ModRecallTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "recallId",
+          "type": "uint64"
+        },
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        },
+        {
+          "name": "yesVotes",
+          "type": "uint64"
+        },
+        {
+          "name": "noVotes",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ModRecallVotersTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "recallId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
+          "type": "string"
+        },
+        {
+          "name": "voteTime",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ModeratorCandTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "approvedBy",
+          "type": "uint64"
+        },
+        {
+          "name": "rejectedBy",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "registrationTime",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ModeratorVotersTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "votedCandidate",
+          "type": "name"
+        },
+        {
+          "name": "vote",
+          "type": "string"
+        },
+        {
+          "name": "voteTime",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ModeratorsTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "approvedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "RecallVotersTable",
       "base": "",
       "fields": [
@@ -382,6 +508,10 @@
         {
           "name": "isFoundingMember",
           "type": "bool"
+        },
+        {
+          "name": "status",
+          "type": "string"
         }
       ]
     },
@@ -443,6 +573,70 @@
         {
           "name": "endTime",
           "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "modapply",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "modrecall",
+      "base": "",
+      "fields": [
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "modrecalvote",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "recallId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "modvote",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "candidate",
+          "type": "name"
+        },
+        {
+          "name": "vote",
+          "type": "string"
         }
       ]
     },
@@ -565,6 +759,26 @@
       "ricardian_contract": ""
     },
     {
+      "name": "modapply",
+      "type": "modapply",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "modrecall",
+      "type": "modrecall",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "modrecalvote",
+      "type": "modrecalvote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "modvote",
+      "type": "modvote",
+      "ricardian_contract": ""
+    },
+    {
       "name": "recall",
       "type": "recall",
       "ricardian_contract": ""
@@ -596,13 +810,6 @@
     }
   ],
   "tables": [
-    {
-      "name": "",
-      "type": "RecallVotesTable",
-      "index_type": "i64",
-      "key_names": [],
-      "key_types": []
-    },
     {
       "name": "accounts",
       "type": "AccountsTable",
@@ -646,8 +853,50 @@
       "key_types": []
     },
     {
+      "name": "modcandidate",
+      "type": "ModeratorCandTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "moderators",
+      "type": "ModeratorsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "modrecall",
+      "type": "ModRecallTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "modvoters",
+      "type": "ModeratorVotersTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "mrecallv",
+      "type": "ModRecallVotersTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
       "name": "recallvoters",
       "type": "RecallVotersTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "recallvotes",
+      "type": "RecallVotesTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

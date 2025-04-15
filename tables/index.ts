@@ -9,3 +9,8 @@ export * from './voters.table';
 export * from './winners.table';
 export * from './recallVote.table';
 export * from './recallVoters.table';
+export * from './moderatorCand.table';
+export * from './moderators.table';
+export * from './moderatorVoter.table';
+export * from './modRecall.table';
+export * from './modrecallvoter.table';

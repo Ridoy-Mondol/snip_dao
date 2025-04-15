@@ -12,7 +12,7 @@ export class ElectionsTable extends Table {
         public registrationEndTime: u64 = 0,
         public candidateStakeAmount: u64 = 0,
         public voterStakeAmount: u64 = 0,
-        public status: string = "upcoming", // Status: upcoming, ongoing, completed
+        public status: string = "upcoming", // Status: upcoming, ongoing, ended, expired
         public totalVote: u64 = 0,
         public candidates: Name[] = [],
     ) {

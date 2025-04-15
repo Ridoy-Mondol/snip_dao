@@ -1,7 +1,7 @@
 import { Name, Table } from "proton-tsc";
 import { stringToU64 } from '../utils';
 
-@table
+@table("recallvotes")
 export class RecallVotesTable extends Table {
     constructor(
         public councilMember: Name = new Name(),

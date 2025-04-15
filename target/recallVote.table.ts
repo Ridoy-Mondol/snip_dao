@@ -8,7 +8,7 @@ export class RecallVotesTableDB extends _chain.MultiIndex<RecallVotesTable> {
 
 }
 
-@table(nocodegen)
+@table("recallvotes", nocodegen)
 
 export class RecallVotesTable implements _chain.MultiIndexValue {
     
@@ -71,7 +71,7 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
     }
 
     static get tableName(): _chain.Name {
-        return _chain.Name.fromU64(0x0000000000000000);
+        return _chain.Name.fromU64(0xBA9068C774CAB000);
     }
 
     static tableIndexes(code: _chain.Name, scope: _chain.Name): _chain.IDXDB[] {

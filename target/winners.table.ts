@@ -19,7 +19,8 @@ export class WinnersTable implements _chain.MultiIndexValue {
         public totalVotes: u64 = 0,
         public electionName: string = "",
         public rank: u8 = 0,
-        public isFoundingMember: boolean = false
+        public isFoundingMember: boolean = false,
+        public status: string = "active" // "active", "expired"
     ) {
         
     }
@@ -41,6 +42,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
         enc.packString(this.electionName);
         enc.packNumber<u8>(this.rank);
         enc.packNumber<boolean>(this.isFoundingMember);
+        enc.packString(this.status);
         return enc.getBytes();
     }
     
@@ -57,6 +59,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
         this.electionName = dec.unpackString();
         this.rank = dec.unpackNumber<u8>();
         this.isFoundingMember = dec.unpackNumber<boolean>();
+        this.status = dec.unpackString();
         return dec.getPos();
     }
 
@@ -68,6 +71,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<u8>();
         size += sizeof<boolean>();
+        size += _chain.Utils.calcPackedStringLength(this.status);
         return size;
     }
 
