@@ -6,10 +6,12 @@ export class RecallVotesTable extends Table {
     constructor(
         public councilMember: Name = new Name(),
         public electionName: string = "",
+        public reason: string = "",
         public keepVotes: u64 = 0,
         public replaceVotes: u64 = 0,
         public startTime: u64 = 0,
         public endTime: u64 = 0,
+        public status: string = "upcoming", // Status: upcoming, ongoing, ended
     ) {
         super();
     }

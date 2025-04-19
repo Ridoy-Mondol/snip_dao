@@ -354,6 +354,10 @@
           "type": "string"
         },
         {
+          "name": "reason",
+          "type": "string"
+        },
+        {
           "name": "keepVotes",
           "type": "uint64"
         },
@@ -368,6 +372,10 @@
         {
           "name": "endTime",
           "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
         }
       ]
     },
@@ -521,6 +529,16 @@
       "fields": []
     },
     {
+      "name": "clearrecall",
+      "base": "",
+      "fields": []
+    },
+    {
+      "name": "clearrevote",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "createelect",
       "base": "",
       "fields": [
@@ -567,12 +585,20 @@
           "type": "string"
         },
         {
+          "name": "reason",
+          "type": "string"
+        },
+        {
           "name": "startTime",
           "type": "uint64"
         },
         {
           "name": "endTime",
           "type": "uint64"
+        },
+        {
+          "name": "signer",
+          "type": "string"
         }
       ]
     },
@@ -673,6 +699,10 @@
         {
           "name": "electionName",
           "type": "string"
+        },
+        {
+          "name": "signer",
+          "type": "string"
         }
       ]
     },
@@ -723,6 +753,10 @@
         {
           "name": "electionName",
           "type": "string"
+        },
+        {
+          "name": "signer",
+          "type": "string"
         }
       ]
     },
@@ -746,6 +780,16 @@
     {
       "name": "cleardata",
       "type": "cleardata",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clearrecall",
+      "type": "clearrecall",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clearrevote",
+      "type": "clearrevote",
       "ricardian_contract": ""
     },
     {

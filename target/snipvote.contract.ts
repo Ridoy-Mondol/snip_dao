@@ -2,6 +2,7 @@ import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
 import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable } from "./tables";
 import {stringToU64} from './utils'
+import {authorizedAccounts} from './utils/accounts';
 
 @contract
 export class snipvoting extends Contract {
@@ -111,6 +112,29 @@ export class snipvoting extends Contract {
     }
 
     // Clear Recall Voters Table
+    let cursor6 = this.recallVotersTable.first();
+    while (cursor6 !== null) {
+        let nextCursor = this.recallVotersTable.next(cursor6);
+        this.recallVotersTable.remove(cursor6);
+        cursor6 = nextCursor;
+    }
+  }
+
+  @action("clearrecall")
+  clearRecall(): void {
+
+    // Clear Recall Votes Table
+    let cursor5 = this.recallVoteTable.first();
+    while (cursor5 !== null) {
+        let nextCursor = this.recallVoteTable.next(cursor5);
+        this.recallVoteTable.remove(cursor5);
+        cursor5 = nextCursor;
+    }
+
+  }
+
+  @action("clearrevote")
+  clearReVote(): void {
     let cursor6 = this.recallVotersTable.first();
     while (cursor6 !== null) {
         let nextCursor = this.recallVotersTable.next(cursor6);
@@ -237,9 +261,7 @@ export class snipvoting extends Contract {
       this.votersTable.store(voterData, this.receiver);
       
       if(election) {
-        if (election.status === "upcoming") {
-          election.status = "ongoing"
-        }
+        election.status = "ongoing";
         election.totalVote += 1;
         this.electionsTable.update(election, this.receiver);
       }
@@ -247,10 +269,17 @@ export class snipvoting extends Contract {
    
    // action to declareWinners by founding members
    @action("winner")
-   declareWinners(electionName: string): void {
-      requireAuth(this.receiver);
-      requireAuth(Name.fromU64(0x334D9361A696A200));
-      requireAuth(Name.fromU64(0x334D9361A696A210));
+   declareWinners(electionName: string, signer: string): void {
+      const authorizedAccounts = [
+        this.receiver.toString(),
+        "ahatashamul",
+        "ahatashamul1",
+      ];
+  
+      check(
+        authorizedAccounts.includes(signer),
+        "You are not authorized to perform this action"
+      );
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
@@ -349,14 +378,19 @@ export class snipvoting extends Contract {
    
   // action to create recall vote by founding member
    @action("createrecall")
-   createRecallVoting ( councilMember: Name, electionName: string, startTime: u64, endTime: u64 ): void {
-      requireAuth(this.receiver);
+   createRecallVoting ( councilMember: Name, electionName: string, reason: string, startTime: u64, endTime: u64, signer: string ): void {
+  
+      check(
+        authorizedAccounts.includes(signer),
+        "You are not authorized to perform this action"
+      );
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let member = this.winnersTable.get(councilMember.N + stringToU64(electionName));
       check(member !== null, "Council member not found");
+      check(member!.isFoundingMember === false, "Founding members can't be replaced");
 
       let recallExist = this.recallVoteTable.get(councilMember.N + stringToU64(electionName));
       check(recallExist === null, "Recall vote already created");
@@ -364,14 +398,17 @@ export class snipvoting extends Contract {
       let currentTime = currentTimeSec();
       check(startTime > currentTime, "Vote start time must be in the future");
       check(endTime > currentTime, "Vote end time must be in the future");
+      check(endTime > startTime, "Start time must be before end time");
 
       let recallEntry = new RecallVotesTable(
         councilMember,
         electionName,
+        reason,
         0, 
         0,
         startTime,
         endTime,
+        "upcoming",
       );
 
       this.recallVoteTable.store(recallEntry, this.receiver);
@@ -413,6 +450,7 @@ export class snipvoting extends Contract {
       } else {
         recallEntry.keepVotes += 1;
       }
+      recallEntry.status = "ongoing";
       this.recallVoteTable.update(recallEntry, this.receiver);
     }
 
@@ -428,8 +466,12 @@ export class snipvoting extends Contract {
 
   // action to determine candidates replaced or not
   @action("recallresult")
-  recallResult(electionName: string): void {
-    requireAuth(this.receiver);
+  recallResult(electionName: string, signer: string): void {
+
+    check(
+      authorizedAccounts.includes(signer),
+      "You are not authorized to perform this action"
+    );
 
     let election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election not found");
@@ -512,6 +554,9 @@ export class snipvoting extends Contract {
 				);
 				this.winnersTable.update(newCouncilMember, this.receiver);
 			}
+
+      recallVote.status = "ended";
+      this.recallVoteTable.update(recallVote, this.receiver);
 	   }
     }
   }
@@ -523,9 +568,9 @@ export class snipvoting extends Contract {
 
      let currentTime = currentTimeSec();
 
-     let userStake = this.accountTable.get(account.N);
-     check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
-     check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
+    //  let userStake = this.accountTable.get(account.N);
+    //  check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
+    //  check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
      
      let existingCandidate = this.moderatorCandTable.get(account.N);
 
@@ -764,6 +809,48 @@ class clearAllTablesAction implements _chain.Packer {
     }
 }
 
+class clearRecallAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clearReVoteAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
 class registerCandidateAction implements _chain.Packer {
     constructor (
         public account: _chain.Name | null = null,
@@ -886,24 +973,28 @@ class voteAction implements _chain.Packer {
 class declareWinnersAction implements _chain.Packer {
     constructor (
         public electionName: string = "",
+        public signer: string = "",
     ) {
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.packString(this.electionName);
+        enc.packString(this.signer);
         return enc.getBytes();
     }
     
     unpack(data: u8[]): usize {
         let dec = new _chain.Decoder(data);
         this.electionName = dec.unpackString();
+        this.signer = dec.unpackString();
         return dec.getPos();
     }
 
     getSize(): usize {
         let size: usize = 0;
         size += _chain.Utils.calcPackedStringLength(this.electionName);
+        size += _chain.Utils.calcPackedStringLength(this.signer);
         return size;
     }
 }
@@ -912,8 +1003,10 @@ class createRecallVotingAction implements _chain.Packer {
     constructor (
         public councilMember: _chain.Name | null = null,
         public electionName: string = "",
+        public reason: string = "",
         public startTime: u64 = 0,
         public endTime: u64 = 0,
+        public signer: string = "",
     ) {
     }
 
@@ -921,8 +1014,10 @@ class createRecallVotingAction implements _chain.Packer {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.councilMember!);
         enc.packString(this.electionName);
+        enc.packString(this.reason);
         enc.packNumber<u64>(this.startTime);
         enc.packNumber<u64>(this.endTime);
+        enc.packString(this.signer);
         return enc.getBytes();
     }
     
@@ -935,8 +1030,10 @@ class createRecallVotingAction implements _chain.Packer {
             this.councilMember! = obj;
         }
         this.electionName = dec.unpackString();
+        this.reason = dec.unpackString();
         this.startTime = dec.unpackNumber<u64>();
         this.endTime = dec.unpackNumber<u64>();
+        this.signer = dec.unpackString();
         return dec.getPos();
     }
 
@@ -944,8 +1041,10 @@ class createRecallVotingAction implements _chain.Packer {
         let size: usize = 0;
         size += this.councilMember!.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
+        size += _chain.Utils.calcPackedStringLength(this.reason);
         size += sizeof<u64>();
         size += sizeof<u64>();
+        size += _chain.Utils.calcPackedStringLength(this.signer);
         return size;
     }
 }
@@ -1004,24 +1103,28 @@ class recallVoteAction implements _chain.Packer {
 class recallResultAction implements _chain.Packer {
     constructor (
         public electionName: string = "",
+        public signer: string = "",
     ) {
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
         enc.packString(this.electionName);
+        enc.packString(this.signer);
         return enc.getBytes();
     }
     
     unpack(data: u8[]): usize {
         let dec = new _chain.Decoder(data);
         this.electionName = dec.unpackString();
+        this.signer = dec.unpackString();
         return dec.getPos();
     }
 
     getSize(): usize {
         let size: usize = 0;
         size += _chain.Utils.calcPackedStringLength(this.electionName);
+        size += _chain.Utils.calcPackedStringLength(this.signer);
         return size;
     }
 }
@@ -1194,6 +1297,16 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             args.unpack(actionData);
             mycontract.clearAllTables();
         }
+		if (action == 0x44546BDD48346200) {//clearrecall
+            const args = new clearRecallAction();
+            args.unpack(actionData);
+            mycontract.clearRecall();
+        }
+		if (action == 0x44546BDD5BA65400) {//clearrevote
+            const args = new clearReVoteAction();
+            args.unpack(actionData);
+            mycontract.clearReVote();
+        }
 		if (action == 0xBA98EC655741A690) {//registercand
             const args = new registerCandidateAction();
             args.unpack(actionData);
@@ -1212,12 +1325,12 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0xE3A7355C00000000) {//winner
             const args = new declareWinnersAction();
             args.unpack(actionData);
-            mycontract.declareWinners(args.electionName);
+            mycontract.declareWinners(args.electionName,args.signer);
         }
 		if (action == 0x45D46CAAEA41A310) {//createrecall
             const args = new createRecallVotingAction();
             args.unpack(actionData);
-            mycontract.createRecallVoting(args.councilMember!,args.electionName,args.startTime,args.endTime);
+            mycontract.createRecallVoting(args.councilMember!,args.electionName,args.reason,args.startTime,args.endTime,args.signer);
         }
 		if (action == 0xBA9068C400000000) {//recall
             const args = new recallVoteAction();
@@ -1227,7 +1340,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0xBA9068C6EAC6A390) {//recallresult
             const args = new recallResultAction();
             args.unpack(actionData);
-            mycontract.recallResult(args.electionName);
+            mycontract.recallResult(args.electionName,args.signer);
         }
 		if (action == 0x95126AD63E000000) {//modapply
             const args = new moderatorApplyAction();

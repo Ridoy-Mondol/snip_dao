@@ -1,6 +1,7 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
 import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable } from "./tables";
 import {stringToU64} from './utils'
+import {authorizedAccounts} from './utils/accounts';
 
 @contract
 export class snipvoting extends Contract {
@@ -110,6 +111,29 @@ export class snipvoting extends Contract {
     }
 
     // Clear Recall Voters Table
+    let cursor6 = this.recallVotersTable.first();
+    while (cursor6 !== null) {
+        let nextCursor = this.recallVotersTable.next(cursor6);
+        this.recallVotersTable.remove(cursor6);
+        cursor6 = nextCursor;
+    }
+  }
+
+  @action("clearrecall")
+  clearRecall(): void {
+
+    // Clear Recall Votes Table
+    let cursor5 = this.recallVoteTable.first();
+    while (cursor5 !== null) {
+        let nextCursor = this.recallVoteTable.next(cursor5);
+        this.recallVoteTable.remove(cursor5);
+        cursor5 = nextCursor;
+    }
+
+  }
+
+  @action("clearrevote")
+  clearReVote(): void {
     let cursor6 = this.recallVotersTable.first();
     while (cursor6 !== null) {
         let nextCursor = this.recallVotersTable.next(cursor6);
@@ -236,9 +260,7 @@ export class snipvoting extends Contract {
       this.votersTable.store(voterData, this.receiver);
       
       if(election) {
-        if (election.status === "upcoming") {
-          election.status = "ongoing"
-        }
+        election.status = "ongoing";
         election.totalVote += 1;
         this.electionsTable.update(election, this.receiver);
       }
@@ -246,10 +268,17 @@ export class snipvoting extends Contract {
    
    // action to declareWinners by founding members
    @action("winner")
-   declareWinners(electionName: string): void {
-      requireAuth(this.receiver);
-      requireAuth(Name.fromString("ahatashamul"));
-      requireAuth(Name.fromString("ahatashamul1"));
+   declareWinners(electionName: string, signer: string): void {
+      const authorizedAccounts = [
+        this.receiver.toString(),
+        "ahatashamul",
+        "ahatashamul1",
+      ];
+  
+      check(
+        authorizedAccounts.includes(signer),
+        "You are not authorized to perform this action"
+      );
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
@@ -348,14 +377,19 @@ export class snipvoting extends Contract {
    
   // action to create recall vote by founding member
    @action("createrecall")
-   createRecallVoting ( councilMember: Name, electionName: string, startTime: u64, endTime: u64 ): void {
-      requireAuth(this.receiver);
+   createRecallVoting ( councilMember: Name, electionName: string, reason: string, startTime: u64, endTime: u64, signer: string ): void {
+  
+      check(
+        authorizedAccounts.includes(signer),
+        "You are not authorized to perform this action"
+      );
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
 
       let member = this.winnersTable.get(councilMember.N + stringToU64(electionName));
       check(member !== null, "Council member not found");
+      check(member!.isFoundingMember === false, "Founding members can't be replaced");
 
       let recallExist = this.recallVoteTable.get(councilMember.N + stringToU64(electionName));
       check(recallExist === null, "Recall vote already created");
@@ -363,14 +397,17 @@ export class snipvoting extends Contract {
       let currentTime = currentTimeSec();
       check(startTime > currentTime, "Vote start time must be in the future");
       check(endTime > currentTime, "Vote end time must be in the future");
+      check(endTime > startTime, "Start time must be before end time");
 
       let recallEntry = new RecallVotesTable(
         councilMember,
         electionName,
+        reason,
         0, 
         0,
         startTime,
         endTime,
+        "upcoming",
       );
 
       this.recallVoteTable.store(recallEntry, this.receiver);
@@ -412,6 +449,7 @@ export class snipvoting extends Contract {
       } else {
         recallEntry.keepVotes += 1;
       }
+      recallEntry.status = "ongoing";
       this.recallVoteTable.update(recallEntry, this.receiver);
     }
 
@@ -427,8 +465,12 @@ export class snipvoting extends Contract {
 
   // action to determine candidates replaced or not
   @action("recallresult")
-  recallResult(electionName: string): void {
-    requireAuth(this.receiver);
+  recallResult(electionName: string, signer: string): void {
+
+    check(
+      authorizedAccounts.includes(signer),
+      "You are not authorized to perform this action"
+    );
 
     let election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election not found");
@@ -511,6 +553,9 @@ export class snipvoting extends Contract {
 				);
 				this.winnersTable.update(newCouncilMember, this.receiver);
 			}
+
+      recallVote.status = "ended";
+      this.recallVoteTable.update(recallVote, this.receiver);
 	   }
     }
   }
@@ -522,9 +567,9 @@ export class snipvoting extends Contract {
 
      let currentTime = currentTimeSec();
 
-     let userStake = this.accountTable.get(account.N);
-     check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
-     check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
+    //  let userStake = this.accountTable.get(account.N);
+    //  check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
+    //  check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
      
      let existingCandidate = this.moderatorCandTable.get(account.N);
 

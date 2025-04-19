@@ -15,10 +15,12 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
     constructor(
         public councilMember: Name = new Name(),
         public electionName: string = "",
+        public reason: string = "",
         public keepVotes: u64 = 0,
         public replaceVotes: u64 = 0,
         public startTime: u64 = 0,
         public endTime: u64 = 0,
+        public status: string = "upcoming", // Status: upcoming, ongoing, ended
     ) {
         
     }
@@ -36,10 +38,12 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.councilMember);
         enc.packString(this.electionName);
+        enc.packString(this.reason);
         enc.packNumber<u64>(this.keepVotes);
         enc.packNumber<u64>(this.replaceVotes);
         enc.packNumber<u64>(this.startTime);
         enc.packNumber<u64>(this.endTime);
+        enc.packString(this.status);
         return enc.getBytes();
     }
     
@@ -52,10 +56,12 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
             this.councilMember = obj;
         }
         this.electionName = dec.unpackString();
+        this.reason = dec.unpackString();
         this.keepVotes = dec.unpackNumber<u64>();
         this.replaceVotes = dec.unpackNumber<u64>();
         this.startTime = dec.unpackNumber<u64>();
         this.endTime = dec.unpackNumber<u64>();
+        this.status = dec.unpackString();
         return dec.getPos();
     }
 
@@ -63,10 +69,12 @@ export class RecallVotesTable implements _chain.MultiIndexValue {
         let size: usize = 0;
         size += this.councilMember.getSize();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
+        size += _chain.Utils.calcPackedStringLength(this.reason);
         size += sizeof<u64>();
         size += sizeof<u64>();
         size += sizeof<u64>();
         size += sizeof<u64>();
+        size += _chain.Utils.calcPackedStringLength(this.status);
         return size;
     }
 
