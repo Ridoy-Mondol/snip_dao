@@ -539,6 +539,16 @@
       "fields": []
     },
     {
+      "name": "clrmodcand",
+      "base": "",
+      "fields": []
+    },
+    {
+      "name": "clrmodvoter",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "createelect",
       "base": "",
       "fields": [
@@ -790,6 +800,16 @@
     {
       "name": "clearrevote",
       "type": "clearrevote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clrmodcand",
+      "type": "clrmodcand",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clrmodvoter",
+      "type": "clrmodvoter",
       "ricardian_contract": ""
     },
     {

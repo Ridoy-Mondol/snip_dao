@@ -142,6 +142,30 @@ export class snipvoting extends Contract {
         cursor6 = nextCursor;
     }
   }
+
+
+  @action("clrmodcand")
+  clrModCand(): void {
+    let cursor7 = this.moderatorCandTable.first();
+    while (cursor7 !== null) {
+        let nextCursor = this.moderatorCandTable.next(cursor7);
+        this.moderatorCandTable.remove(cursor7);
+        cursor7 = nextCursor;
+    }
+  }
+
+
+  @action("clrmodvoter")
+  clrModVoter(): void {
+    let cursor8 = this.moderatorVotersTable.first();
+    while (cursor8 !== null) {
+        let nextCursor = this.moderatorVotersTable.next(cursor8);
+        this.moderatorVotersTable.remove(cursor8);
+        cursor8 = nextCursor;
+    }
+  }
+
+
    
   // action to register candidates for election
    @action("registercand")
@@ -290,7 +314,8 @@ export class snipvoting extends Contract {
       // expire all previous elections
       let electionCursor = this.electionsTable.first();
       while (electionCursor !== null) {
-        if (electionCursor.electionName !== electionName && electionCursor.status !== "expired") {
+        if (stringToU64(electionCursor.electionName) !== stringToU64(electionName) && stringToU64(electionCursor.status) !== stringToU64("expired") && electionCursor.	
+        endTime < currentTime) {
           electionCursor.status = "expired";
           this.electionsTable.update(electionCursor, this.receiver);
         }
@@ -300,7 +325,7 @@ export class snipvoting extends Contract {
       // expire all previous winners
       let winnerCursor = this.winnersTable.first();
       while (winnerCursor !== null) {
-        if (winnerCursor.status === "active") {
+        if (stringToU64(winnerCursor.status) === stringToU64("active")) {
           winnerCursor.status = "expired";
           this.winnersTable.update(winnerCursor, this.receiver);
         }
@@ -319,7 +344,7 @@ export class snipvoting extends Contract {
       let filteredCandidates: CandidatesTable[] = [];
       for (let i = 0; i < allCandidates.length; i++) {
        let candidate = allCandidates[i];
-       if (candidate.electionName == electionName) {
+       if (stringToU64(candidate.electionName) === stringToU64(electionName)) {
          filteredCandidates.push(candidate);
        }
       }
@@ -595,21 +620,29 @@ export class snipvoting extends Contract {
      requireAuth(voter);
 
      let currentTime = currentTimeSec();
-     
-     // Only council members can vote
-     let validVoter = this.winnersTable.exists(voter.N);
-     check(validVoter === true, "Only council members can vote");
+
+     let winnerCursor = this.winnersTable.first();
+     let isValidVoter = false;
+     while (winnerCursor !== null) {
+       if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+         isValidVoter = true;
+         break;
+       }
+       winnerCursor = this.winnersTable.next(winnerCursor);
+     }
+
+     check(isValidVoter === true, "Only council members can vote");
 
      let voterExist = this.moderatorVotersTable.get(voter.N + candidate.N);
      check(voterExist === null, "You have already voted for this candidate");
    
      let candidateData = this.moderatorCandTable.get(candidate.N);
      check(candidateData !== null, "Candidate not found");
-     check(candidateData!.status === "pending", "Voting has ended for this candidate");
+     check(stringToU64(candidateData!.status.toString().toLowerCase().trim()) === stringToU64("pending"), "Voting has ended for this candidate");
 
-     check(vote === "approve" || vote === "reject", "Vote must be 'approve' or 'reject'");
+     check(stringToU64(vote) === stringToU64("approve") || stringToU64(vote) === stringToU64("reject"), "Vote must be 'approve' or 'reject'");
      if (candidateData) {
-       if (vote === "approve") {
+       if (stringToU64(vote) === stringToU64("approve")) {
          candidateData.approvedBy += 1;
        } else {
          candidateData.rejectedBy += 1;
@@ -689,17 +722,27 @@ export class snipvoting extends Contract {
 
     let recall = this.modRecallTable.get(recallId);
     check(recall !== null, "Recall vote not found for this moderator");
-    check(recall!.status === "pending", "This recall vote is no longer active");
+    check(stringToU64(recall!.status) === stringToU64("pending"), "This recall vote is no longer active");
 
-    let isCouncil = this.winnersTable.exists(voter.N);
-    check(isCouncil === true, "Only council members can vote on recalls");
+    // only council members can vote
+    let winnerCursor = this.winnersTable.first();
+    let isValidVoter = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isValidVoter = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+
+    check(isValidVoter === true, "Only council members can vote");
 
     const alreadyVoted = this.modRecallVotersTable.get(voter.N + recallId);
     check(alreadyVoted === null, "You have already voted in this recall");
 
-    check(vote === "yes" || vote === "no", "Vote must be 'yes' or 'no'");
+    check(stringToU64(vote) === stringToU64("yes") || stringToU64(vote) === stringToU64("no"), "Vote must be 'yes' or 'no'");
 
-    if (vote === "yes") {
+    if (stringToU64(vote) === stringToU64("yes")) {
       recall!.yesVotes += 1;
     } else {
       recall!.noVotes += 1;
@@ -831,6 +874,48 @@ class clearRecallAction implements _chain.Packer {
 }
 
 class clearReVoteAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clrModCandAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clrModVoterAction implements _chain.Packer {
     constructor (
     ) {
     }
@@ -1306,6 +1391,16 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new clearReVoteAction();
             args.unpack(actionData);
             mycontract.clearReVote();
+        }
+		if (action == 0x446F2A25069A4000) {//clrmodcand
+            const args = new clrModCandAction();
+            args.unpack(actionData);
+            mycontract.clrModCand();
+        }
+		if (action == 0x446F2A2774CAAE00) {//clrmodvoter
+            const args = new clrModVoterAction();
+            args.unpack(actionData);
+            mycontract.clrModVoter();
         }
 		if (action == 0xBA98EC655741A690) {//registercand
             const args = new registerCandidateAction();
