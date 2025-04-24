@@ -23,6 +23,7 @@ export class ModRecallTable implements _chain.MultiIndexValue {
     constructor(
         public recallId: u64 = 0,
         public moderator: Name = new Name(),
+        public userId: string = "",
         public reason: string = "",
         public yesVotes: u64 = 0,
         public noVotes: u64 = 0,
@@ -53,6 +54,7 @@ export class ModRecallTable implements _chain.MultiIndexValue {
         let enc = new _chain.Encoder(this.getSize());
         enc.packNumber<u64>(this.recallId);
         enc.pack(this.moderator);
+        enc.packString(this.userId);
         enc.packString(this.reason);
         enc.packNumber<u64>(this.yesVotes);
         enc.packNumber<u64>(this.noVotes);
@@ -69,6 +71,7 @@ export class ModRecallTable implements _chain.MultiIndexValue {
             dec.unpack(obj);
             this.moderator = obj;
         }
+        this.userId = dec.unpackString();
         this.reason = dec.unpackString();
         this.yesVotes = dec.unpackNumber<u64>();
         this.noVotes = dec.unpackNumber<u64>();
@@ -80,6 +83,7 @@ export class ModRecallTable implements _chain.MultiIndexValue {
         let size: usize = 0;
         size += sizeof<u64>();
         size += this.moderator.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userId);
         size += _chain.Utils.calcPackedStringLength(this.reason);
         size += sizeof<u64>();
         size += sizeof<u64>();

@@ -165,6 +165,17 @@ export class snipvoting extends Contract {
   }
 
 
+  @action("clrmodrecall")
+  clrModRecall(): void {
+    let cursor9 = this.modRecallTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.modRecallTable.next(cursor9);
+        this.modRecallTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+
    
   // action to register candidates for election
    @action("registercand")
@@ -678,8 +689,20 @@ export class snipvoting extends Contract {
   }
 
   @action("modrecall")
-  initModRecall(moderator: Name, reason: string): void {
-    requireAuth(this.receiver);
+  initModRecall(moderator: Name, reason: string, signer: Name): void {
+    requireAuth(signer);
+
+    let winnerCursor = this.winnersTable.first();
+     let isCouncil = false;
+     while (winnerCursor !== null) {
+       if (winnerCursor.winner.N === signer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isCouncil = true;
+         break;
+       }
+       winnerCursor = this.winnersTable.next(winnerCursor);
+     }
+
+    check(isCouncil === true, "Only council members can recall moderator");
 
     let moderatorExist = this.moderatorsTable.get(moderator.N);
     check(moderatorExist !== null, "Moderator not found");
@@ -693,8 +716,8 @@ export class snipvoting extends Contract {
 
     for (let i = 0; i < recallEntry.length; i++) {
       if (
-        recallEntry[i].moderator === moderator &&
-        recallEntry[i].status !== "failed"
+        recallEntry[i].moderator.N === moderator.N &&
+        stringToU64(recallEntry[i].status) !== stringToU64("failed")
       ) {
         check(false, "Cannot create a new recall while another is in progress or already completed.");
       }
@@ -704,6 +727,7 @@ export class snipvoting extends Contract {
     const newRecall = new ModRecallTable(
       newRecallId,
       moderator,
+      moderatorExist!.userName,
       reason,
       0,
       0,

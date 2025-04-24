@@ -5,6 +5,7 @@ export class ModRecallTable extends Table {
     constructor(
         public recallId: u64 = 0,
         public moderator: Name = new Name(),
+        public userId: string = "",
         public reason: string = "",
         public yesVotes: u64 = 0,
         public noVotes: u64 = 0,

@@ -198,6 +198,10 @@
           "type": "name"
         },
         {
+          "name": "userId",
+          "type": "string"
+        },
+        {
           "name": "reason",
           "type": "string"
         },
@@ -544,6 +548,11 @@
       "fields": []
     },
     {
+      "name": "clrmodrecall",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "clrmodvoter",
       "base": "",
       "fields": []
@@ -637,6 +646,10 @@
         {
           "name": "reason",
           "type": "string"
+        },
+        {
+          "name": "signer",
+          "type": "name"
         }
       ]
     },
@@ -805,6 +818,11 @@
     {
       "name": "clrmodcand",
       "type": "clrmodcand",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clrmodrecall",
+      "type": "clrmodrecall",
       "ricardian_contract": ""
     },
     {

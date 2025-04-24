@@ -166,6 +166,17 @@ export class snipvoting extends Contract {
   }
 
 
+  @action("clrmodrecall")
+  clrModRecall(): void {
+    let cursor9 = this.modRecallTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.modRecallTable.next(cursor9);
+        this.modRecallTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+
    
   // action to register candidates for election
    @action("registercand")
@@ -679,8 +690,20 @@ export class snipvoting extends Contract {
   }
 
   @action("modrecall")
-  initModRecall(moderator: Name, reason: string): void {
-    requireAuth(this.receiver);
+  initModRecall(moderator: Name, reason: string, signer: Name): void {
+    requireAuth(signer);
+
+    let winnerCursor = this.winnersTable.first();
+     let isCouncil = false;
+     while (winnerCursor !== null) {
+       if (winnerCursor.winner.N === signer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isCouncil = true;
+         break;
+       }
+       winnerCursor = this.winnersTable.next(winnerCursor);
+     }
+
+    check(isCouncil === true, "Only council members can recall moderator");
 
     let moderatorExist = this.moderatorsTable.get(moderator.N);
     check(moderatorExist !== null, "Moderator not found");
@@ -694,8 +717,8 @@ export class snipvoting extends Contract {
 
     for (let i = 0; i < recallEntry.length; i++) {
       if (
-        recallEntry[i].moderator === moderator &&
-        recallEntry[i].status !== "failed"
+        recallEntry[i].moderator.N === moderator.N &&
+        stringToU64(recallEntry[i].status) !== stringToU64("failed")
       ) {
         check(false, "Cannot create a new recall while another is in progress or already completed.");
       }
@@ -705,6 +728,7 @@ export class snipvoting extends Contract {
     const newRecall = new ModRecallTable(
       newRecallId,
       moderator,
+      moderatorExist!.userName,
       reason,
       0,
       0,
@@ -916,6 +940,27 @@ class clrModCandAction implements _chain.Packer {
 }
 
 class clrModVoterAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clrModRecallAction implements _chain.Packer {
     constructor (
     ) {
     }
@@ -1295,6 +1340,7 @@ class initModRecallAction implements _chain.Packer {
     constructor (
         public moderator: _chain.Name | null = null,
         public reason: string = "",
+        public signer: _chain.Name | null = null,
     ) {
     }
 
@@ -1302,6 +1348,7 @@ class initModRecallAction implements _chain.Packer {
         let enc = new _chain.Encoder(this.getSize());
         enc.pack(this.moderator!);
         enc.packString(this.reason);
+        enc.pack(this.signer!);
         return enc.getBytes();
     }
     
@@ -1314,6 +1361,12 @@ class initModRecallAction implements _chain.Packer {
             this.moderator! = obj;
         }
         this.reason = dec.unpackString();
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.signer! = obj;
+        }
         return dec.getPos();
     }
 
@@ -1321,6 +1374,7 @@ class initModRecallAction implements _chain.Packer {
         let size: usize = 0;
         size += this.moderator!.getSize();
         size += _chain.Utils.calcPackedStringLength(this.reason);
+        size += this.signer!.getSize();
         return size;
     }
 }
@@ -1402,6 +1456,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             args.unpack(actionData);
             mycontract.clrModVoter();
         }
+		if (action == 0x446F2A26EA41A310) {//clrmodrecall
+            const args = new clrModRecallAction();
+            args.unpack(actionData);
+            mycontract.clrModRecall();
+        }
 		if (action == 0xBA98EC655741A690) {//registercand
             const args = new registerCandidateAction();
             args.unpack(actionData);
@@ -1450,7 +1509,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0x95137520D1880000) {//modrecall
             const args = new initModRecallAction();
             args.unpack(actionData);
-            mycontract.initModRecall(args.moderator!,args.reason);
+            mycontract.initModRecall(args.moderator!,args.reason,args.signer!);
         }
 		if (action == 0x95137520D1DD32A0) {//modrecalvote
             const args = new modRecallVoteAction();
