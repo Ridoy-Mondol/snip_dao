@@ -316,6 +316,88 @@
       ]
     },
     {
+      "name": "PropConfigTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint8"
+        },
+        {
+          "name": "proposalStake",
+          "type": "uint64"
+        },
+        {
+          "name": "voteStake",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "PropVotersTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ProposalsTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "proposer",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "yesCount",
+          "type": "uint64"
+        },
+        {
+          "name": "noCount",
+          "type": "uint64"
+        },
+        {
+          "name": "deadline",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "RecallVotersTable",
       "base": "",
       "fields": [
@@ -543,6 +625,20 @@
       "fields": []
     },
     {
+      "name": "closeprop",
+      "base": "",
+      "fields": [
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "sender",
+          "type": "name"
+        }
+      ]
+    },
+    {
       "name": "clrmodcand",
       "base": "",
       "fields": []
@@ -748,6 +844,54 @@
       ]
     },
     {
+      "name": "submitprop",
+      "base": "",
+      "fields": [
+        {
+          "name": "proposer",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "deadline",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "updateconfig",
+      "base": "",
+      "fields": [
+        {
+          "name": "admin",
+          "type": "string"
+        },
+        {
+          "name": "proposalStake",
+          "type": "uint64"
+        },
+        {
+          "name": "voteStake",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "vote",
       "base": "",
       "fields": [
@@ -765,6 +909,24 @@
         },
         {
           "name": "electionName",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "voteprop",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
           "type": "string"
         }
       ]
@@ -813,6 +975,11 @@
     {
       "name": "clearrevote",
       "type": "clearrevote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "closeprop",
+      "type": "closeprop",
       "ricardian_contract": ""
     },
     {
@@ -876,8 +1043,23 @@
       "ricardian_contract": ""
     },
     {
+      "name": "submitprop",
+      "type": "submitprop",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "updateconfig",
+      "type": "updateconfig",
+      "ricardian_contract": ""
+    },
+    {
       "name": "vote",
       "type": "vote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "voteprop",
+      "type": "voteprop",
       "ricardian_contract": ""
     },
     {
@@ -965,6 +1147,27 @@
     {
       "name": "mrecallv",
       "type": "ModRecallVotersTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "propconfig",
+      "type": "PropConfigTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "proposals",
+      "type": "ProposalsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "propvoters",
+      "type": "PropVotersTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

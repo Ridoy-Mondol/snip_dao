@@ -1,6 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -28,6 +28,12 @@ export class snipvoting extends Contract {
   private modRecallTable: TableStore<ModRecallTable> = new TableStore<ModRecallTable>(this.receiver, this.receiver);
 
   private modRecallVotersTable: TableStore<ModRecallVotersTable> = new TableStore<ModRecallVotersTable>(this.receiver, this.receiver);
+
+  private proposalsTable: TableStore<ProposalsTable> = new TableStore<ProposalsTable>(this.receiver, this.receiver);
+
+  private propVotersTable: TableStore<PropVotersTable> = new TableStore<PropVotersTable>(this.receiver, this.receiver);
+
+  private propConfigTable: TableStore<PropConfigTable> = new TableStore<PropConfigTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromU64(0xC4DD5C6600000000));
 
@@ -688,7 +694,8 @@ export class snipvoting extends Contract {
       this.moderatorCandTable.update(candidateData, this.receiver);
      }
   }
-
+  
+  // action to initiate moderator recall
   @action("modrecall")
   initModRecall(moderator: Name, reason: string, signer: Name): void {
     requireAuth(signer);
@@ -737,7 +744,8 @@ export class snipvoting extends Contract {
 
     this.modRecallTable.store(newRecall, this.receiver);
   }
-
+  
+  // vote on moderator recall
   @action('modrecalvote')
   modRecallVote(voter: Name, recallId: u64, vote: string): void {
     requireAuth(voter);
@@ -796,6 +804,150 @@ export class snipvoting extends Contract {
     this.modRecallTable.update(recall!, this.receiver);
 
   }
+  
+  // action to update staking requirement for proposal
+  @action("updateconfig")
+  updateConfig(admin: string, proposalStake: u64,   voteStake: u64): void {
+
+    check(
+      authorizedAccounts.includes(admin),
+      "You are not authorized to perform this action"
+    );
+
+    const existing = this.propConfigTable.get(0);
+    if (existing !== null) {
+      existing.proposalStake = proposalStake;
+      existing.voteStake = voteStake;
+      this.propConfigTable.update(existing, this.receiver);
+    } else {
+      const newConfig = new PropConfigTable(0, proposalStake, voteStake);
+      this.propConfigTable.store(newConfig, this.receiver);
+    }
+  }
+
+  // action to create proposal
+  @action("submitprop")
+  submitProposal(proposer: Name, userName: string, title: string, description: string, category: string, deadline: u64): void {
+    requireAuth(proposer);
+
+    const config = this.propConfigTable.get(0);
+
+    let userStake = this.accountTable.get(proposer.N);
+    check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+    check(userStake!.totalStaked >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+
+    check(deadline > currentTimeSec(), "Deadline must be in the future");
+
+    const newProposalId = currentTimeSec();
+    const newProposal = new ProposalsTable(
+      newProposalId,
+      proposer,
+      userName,
+      title,
+      description,
+      category,
+      0,
+      0,
+      deadline,
+      "open",
+    );
+
+    this.proposalsTable.store(newProposal, this.receiver);
+  }
+
+  @action("voteprop")
+  voteProposal(voter: Name, proposalId: u64, vote: string): void {
+    requireAuth(voter);
+
+    const proposal = this.proposalsTable.get(proposalId);
+    check(proposal !== null, "Proposal not found");
+    
+    const config = this.propConfigTable.get(0);
+
+    let userStake = this.accountTable.get(voter.N);
+    check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+    check(userStake!.totalStaked >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+
+    const now = currentTimeSec();
+    check(now < proposal!.deadline, "Voting deadline has passed");
+
+    let voterExist = this.propVotersTable.get(voter.N + proposalId);
+    check (voterExist === null, "You already voted in this proposal");
+
+    check (stringToU64(vote) === stringToU64("yes") || stringToU64(vote) === stringToU64("no"), "Vote must be 'yes' or 'no'");
+
+    if (stringToU64(vote) === stringToU64("yes")) {
+      proposal!.yesCount += 1;
+    } else if (stringToU64(vote) === stringToU64("no")) {
+      proposal!.noCount += 1;
+    }
+    this.proposalsTable.update(proposal!, this.receiver);    
+
+    const newVoter = new PropVotersTable(
+      voter,
+      proposalId,
+      vote,
+    );
+
+    this.propVotersTable.store(newVoter, this.receiver);
+  }
+
+  @action("closeprop")
+  closeProposal(proposalId: u64, sender: Name): void {
+    requireAuth(sender);
+
+    let prop = this.proposalsTable.get(proposalId);
+    check(prop !== null, "Proposal not found");
+    check(stringToU64(prop!.status) == stringToU64("open"), "Proposal already closed");
+    check(prop!.deadline < currentTimeSec(), "Vote still open");
+
+    const config = this.propConfigTable.get(0);
+    check(config !== null, "Proposal config not found");
+
+    // Step 1: Get all eligible voters
+    let totalEligible = 0;
+    let accounts = this.accountTable.first();
+    while(accounts !== null) {
+      if (accounts.totalStaked >= config!.voteStake) {
+        totalEligible++;
+      }
+      accounts = this.accountTable.next(accounts);
+    }
+
+    check(totalEligible > 0, "No eligible voters found");
+
+    // Step 2: Get all votes for this proposal
+    let voters = this.propVotersTable.first();
+    let totalVotes = 0;
+    while(voters !== null) {
+      if (voters.proposalId == proposalId) {
+        totalVotes++;
+      }
+      voters = this.propVotersTable.next(voters);
+    }
+
+    // Step 3: Check participation
+    let percentParticipation = (totalVotes * 100) / totalEligible;
+    if (percentParticipation < 90) {
+      prop!.status = "failed";
+      this.proposalsTable.update(prop!, this.receiver);
+      return;
+    }
+
+    // Step 4: Evaluate outcome
+    if (prop!.yesCount > prop!.noCount) {
+      prop!.status = "passed";
+    } else {
+      prop!.status = "failed";
+    }
+
+    this.proposalsTable.update(prop!, this.receiver);
+  }
+
+
+
+
+
 
 
 
@@ -1417,6 +1569,161 @@ class modRecallVoteAction implements _chain.Packer {
     }
 }
 
+class updateConfigAction implements _chain.Packer {
+    constructor (
+        public admin: string = "",
+        public proposalStake: u64 = 0,
+        public voteStake: u64 = 0,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.packString(this.admin);
+        enc.packNumber<u64>(this.proposalStake);
+        enc.packNumber<u64>(this.voteStake);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        this.admin = dec.unpackString();
+        this.proposalStake = dec.unpackNumber<u64>();
+        this.voteStake = dec.unpackNumber<u64>();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += _chain.Utils.calcPackedStringLength(this.admin);
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        return size;
+    }
+}
+
+class submitProposalAction implements _chain.Packer {
+    constructor (
+        public proposer: _chain.Name | null = null,
+        public userName: string = "",
+        public title: string = "",
+        public description: string = "",
+        public category: string = "",
+        public deadline: u64 = 0,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.proposer!);
+        enc.packString(this.userName);
+        enc.packString(this.title);
+        enc.packString(this.description);
+        enc.packString(this.category);
+        enc.packNumber<u64>(this.deadline);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.proposer! = obj;
+        }
+        this.userName = dec.unpackString();
+        this.title = dec.unpackString();
+        this.description = dec.unpackString();
+        this.category = dec.unpackString();
+        this.deadline = dec.unpackNumber<u64>();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.proposer!.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.userName);
+        size += _chain.Utils.calcPackedStringLength(this.title);
+        size += _chain.Utils.calcPackedStringLength(this.description);
+        size += _chain.Utils.calcPackedStringLength(this.category);
+        size += sizeof<u64>();
+        return size;
+    }
+}
+
+class voteProposalAction implements _chain.Packer {
+    constructor (
+        public voter: _chain.Name | null = null,
+        public proposalId: u64 = 0,
+        public vote: string = "",
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.voter!);
+        enc.packNumber<u64>(this.proposalId);
+        enc.packString(this.vote);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.voter! = obj;
+        }
+        this.proposalId = dec.unpackNumber<u64>();
+        this.vote = dec.unpackString();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.voter!.getSize();
+        size += sizeof<u64>();
+        size += _chain.Utils.calcPackedStringLength(this.vote);
+        return size;
+    }
+}
+
+class closeProposalAction implements _chain.Packer {
+    constructor (
+        public proposalId: u64 = 0,
+        public sender: _chain.Name | null = null,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.packNumber<u64>(this.proposalId);
+        enc.pack(this.sender!);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        this.proposalId = dec.unpackNumber<u64>();
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.sender! = obj;
+        }
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += sizeof<u64>();
+        size += this.sender!.getSize();
+        return size;
+    }
+}
+
 export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 	const _receiver = new _chain.Name(receiver);
 	const _firstReceiver = new _chain.Name(firstReceiver);
@@ -1515,6 +1822,26 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new modRecallVoteAction();
             args.unpack(actionData);
             mycontract.modRecallVote(args.voter!,args.recallId,args.vote);
+        }
+		if (action == 0xD5526CA9149ADCC0) {//updateconfig
+            const args = new updateConfigAction();
+            args.unpack(actionData);
+            mycontract.updateConfig(args.admin,args.proposalStake,args.voteStake);
+        }
+		if (action == 0xC68F2766B7A54000) {//submitprop
+            const args = new submitProposalAction();
+            args.unpack(actionData);
+            mycontract.submitProposal(args.proposer!,args.userName,args.title,args.description,args.category,args.deadline);
+        }
+		if (action == 0xDD32AADE95000000) {//voteprop
+            const args = new voteProposalAction();
+            args.unpack(actionData);
+            mycontract.voteProposal(args.voter!,args.proposalId,args.vote);
+        }
+		if (action == 0x44698556F4A80000) {//closeprop
+            const args = new closeProposalAction();
+            args.unpack(actionData);
+            mycontract.closeProposal(args.proposalId,args.sender!);
         }
 	}
   

@@ -1,5 +1,5 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -27,6 +27,12 @@ export class snipvoting extends Contract {
   private modRecallTable: TableStore<ModRecallTable> = new TableStore<ModRecallTable>(this.receiver, this.receiver);
 
   private modRecallVotersTable: TableStore<ModRecallVotersTable> = new TableStore<ModRecallVotersTable>(this.receiver, this.receiver);
+
+  private proposalsTable: TableStore<ProposalsTable> = new TableStore<ProposalsTable>(this.receiver, this.receiver);
+
+  private propVotersTable: TableStore<PropVotersTable> = new TableStore<PropVotersTable>(this.receiver, this.receiver);
+
+  private propConfigTable: TableStore<PropConfigTable> = new TableStore<PropConfigTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -687,7 +693,8 @@ export class snipvoting extends Contract {
       this.moderatorCandTable.update(candidateData, this.receiver);
      }
   }
-
+  
+  // action to initiate moderator recall
   @action("modrecall")
   initModRecall(moderator: Name, reason: string, signer: Name): void {
     requireAuth(signer);
@@ -736,7 +743,8 @@ export class snipvoting extends Contract {
 
     this.modRecallTable.store(newRecall, this.receiver);
   }
-
+  
+  // vote on moderator recall
   @action('modrecalvote')
   modRecallVote(voter: Name, recallId: u64, vote: string): void {
     requireAuth(voter);
@@ -795,6 +803,150 @@ export class snipvoting extends Contract {
     this.modRecallTable.update(recall!, this.receiver);
 
   }
+  
+  // action to update staking requirement for proposal
+  @action("updateconfig")
+  updateConfig(admin: string, proposalStake: u64,   voteStake: u64): void {
+
+    check(
+      authorizedAccounts.includes(admin),
+      "You are not authorized to perform this action"
+    );
+
+    const existing = this.propConfigTable.get(0);
+    if (existing !== null) {
+      existing.proposalStake = proposalStake;
+      existing.voteStake = voteStake;
+      this.propConfigTable.update(existing, this.receiver);
+    } else {
+      const newConfig = new PropConfigTable(0, proposalStake, voteStake);
+      this.propConfigTable.store(newConfig, this.receiver);
+    }
+  }
+
+  // action to create proposal
+  @action("submitprop")
+  submitProposal(proposer: Name, userName: string, title: string, description: string, category: string, deadline: u64): void {
+    requireAuth(proposer);
+
+    const config = this.propConfigTable.get(0);
+
+    let userStake = this.accountTable.get(proposer.N);
+    check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+    check(userStake!.totalStaked >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+
+    check(deadline > currentTimeSec(), "Deadline must be in the future");
+
+    const newProposalId = currentTimeSec();
+    const newProposal = new ProposalsTable(
+      newProposalId,
+      proposer,
+      userName,
+      title,
+      description,
+      category,
+      0,
+      0,
+      deadline,
+      "open",
+    );
+
+    this.proposalsTable.store(newProposal, this.receiver);
+  }
+
+  @action("voteprop")
+  voteProposal(voter: Name, proposalId: u64, vote: string): void {
+    requireAuth(voter);
+
+    const proposal = this.proposalsTable.get(proposalId);
+    check(proposal !== null, "Proposal not found");
+    
+    const config = this.propConfigTable.get(0);
+
+    let userStake = this.accountTable.get(voter.N);
+    check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+    check(userStake!.totalStaked >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+
+    const now = currentTimeSec();
+    check(now < proposal!.deadline, "Voting deadline has passed");
+
+    let voterExist = this.propVotersTable.get(voter.N + proposalId);
+    check (voterExist === null, "You already voted in this proposal");
+
+    check (stringToU64(vote) === stringToU64("yes") || stringToU64(vote) === stringToU64("no"), "Vote must be 'yes' or 'no'");
+
+    if (stringToU64(vote) === stringToU64("yes")) {
+      proposal!.yesCount += 1;
+    } else if (stringToU64(vote) === stringToU64("no")) {
+      proposal!.noCount += 1;
+    }
+    this.proposalsTable.update(proposal!, this.receiver);    
+
+    const newVoter = new PropVotersTable(
+      voter,
+      proposalId,
+      vote,
+    );
+
+    this.propVotersTable.store(newVoter, this.receiver);
+  }
+
+  @action("closeprop")
+  closeProposal(proposalId: u64, sender: Name): void {
+    requireAuth(sender);
+
+    let prop = this.proposalsTable.get(proposalId);
+    check(prop !== null, "Proposal not found");
+    check(stringToU64(prop!.status) == stringToU64("open"), "Proposal already closed");
+    check(prop!.deadline < currentTimeSec(), "Vote still open");
+
+    const config = this.propConfigTable.get(0);
+    check(config !== null, "Proposal config not found");
+
+    // Step 1: Get all eligible voters
+    let totalEligible = 0;
+    let accounts = this.accountTable.first();
+    while(accounts !== null) {
+      if (accounts.totalStaked >= config!.voteStake) {
+        totalEligible++;
+      }
+      accounts = this.accountTable.next(accounts);
+    }
+
+    check(totalEligible > 0, "No eligible voters found");
+
+    // Step 2: Get all votes for this proposal
+    let voters = this.propVotersTable.first();
+    let totalVotes = 0;
+    while(voters !== null) {
+      if (voters.proposalId == proposalId) {
+        totalVotes++;
+      }
+      voters = this.propVotersTable.next(voters);
+    }
+
+    // Step 3: Check participation
+    let percentParticipation = (totalVotes * 100) / totalEligible;
+    if (percentParticipation < 90) {
+      prop!.status = "failed";
+      this.proposalsTable.update(prop!, this.receiver);
+      return;
+    }
+
+    // Step 4: Evaluate outcome
+    if (prop!.yesCount > prop!.noCount) {
+      prop!.status = "passed";
+    } else {
+      prop!.status = "failed";
+    }
+
+    this.proposalsTable.update(prop!, this.receiver);
+  }
+
+
+
+
+
 
 
 
