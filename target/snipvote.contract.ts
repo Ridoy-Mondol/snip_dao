@@ -796,6 +796,10 @@ export class snipvoting extends Contract {
       if (moderator !== null) {
         this.moderatorsTable.remove(moderator);
       }
+
+      const modCand = this.moderatorCandTable.get(recall!.moderator.N);
+      modCand!.status = "recalled";
+      this.moderatorCandTable.update(modCand!, this.receiver);
   
     } else if (recall!.noVotes >= 4) {
       recall!.status = "failed";
@@ -831,10 +835,13 @@ export class snipvoting extends Contract {
     requireAuth(proposer);
 
     const config = this.propConfigTable.get(0);
-
-    let userStake = this.accountTable.get(proposer.N);
-    check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
-    check(userStake!.totalStaked >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+    check(config !== null, "Proposal config not found. Please initialize the config first.");
+    
+    if (config!.proposalStake > 0) {
+      let userStake = this.accountTable.get(proposer.N);
+      check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+      check(userStake!.totalStaked >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+    }
 
     check(deadline > currentTimeSec(), "Deadline must be in the future");
 
@@ -854,7 +861,8 @@ export class snipvoting extends Contract {
 
     this.proposalsTable.store(newProposal, this.receiver);
   }
-
+  
+  // action to vote on proposal
   @action("voteprop")
   voteProposal(voter: Name, proposalId: u64, vote: string): void {
     requireAuth(voter);
@@ -863,10 +871,13 @@ export class snipvoting extends Contract {
     check(proposal !== null, "Proposal not found");
     
     const config = this.propConfigTable.get(0);
-
-    let userStake = this.accountTable.get(voter.N);
-    check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
-    check(userStake!.totalStaked >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+    check(config !== null, "Proposal config not found. Please initialize the config first.");
+    
+    if (config!.voteStake > 0) {
+      let userStake = this.accountTable.get(voter.N);
+      check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+      check(userStake!.totalStaked >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+    }
 
     const now = currentTimeSec();
     check(now < proposal!.deadline, "Voting deadline has passed");
@@ -891,67 +902,71 @@ export class snipvoting extends Contract {
 
     this.propVotersTable.store(newVoter, this.receiver);
   }
-
+  
+  // action to decle proposal result after deadline passed
   @action("closeprop")
-  closeProposal(proposalId: u64, sender: Name): void {
+  closeProposal(sender: Name): void {
     requireAuth(sender);
 
-    let prop = this.proposalsTable.get(proposalId);
-    check(prop !== null, "Proposal not found");
-    check(stringToU64(prop!.status) == stringToU64("open"), "Proposal already closed");
-    check(prop!.deadline < currentTimeSec(), "Vote still open");
+    check(
+      authorizedAccounts.includes(sender.toString()),
+      "You are not authorized to perform this action"
+    );
 
     const config = this.propConfigTable.get(0);
     check(config !== null, "Proposal config not found");
 
-    // Step 1: Get all eligible voters
-    let totalEligible = 0;
-    let accounts = this.accountTable.first();
-    while(accounts !== null) {
-      if (accounts.totalStaked >= config!.voteStake) {
-        totalEligible++;
+    let processedCount = 0;
+    const MAX_PROCESS = 10; 
+
+    let proposal = this.proposalsTable.first();
+    while (proposal !== null) {
+      const isOpen = stringToU64(proposal.status) == stringToU64("open");
+      const isExpired = proposal.deadline < currentTimeSec();
+
+      if (isOpen && isExpired) {
+        // Step 1: Count eligible voters
+        let totalEligible = 0;
+        let account = this.accountTable.first();
+        while (account !== null) {
+          if (account.totalStaked >= config!.voteStake) {
+            totalEligible++;
+          }
+          account = this.accountTable.next(account);
+        }
+        check(totalEligible > 0, "No eligible voters found");
+
+        // Step 2: Get total votes
+        let totalVotes = proposal.yesCount + proposal.noCount;
+
+        // Step 3: Check participation percentage
+        let participation = (totalVotes * 100) / totalEligible;
+        if (participation < 90) {
+          proposal.status = "failed";
+        } else {
+          // Step 4: Evaluate outcome
+          if (proposal.yesCount > proposal.noCount) {
+            proposal.status = "passed";
+          } else {
+            proposal.status = "failed";
+          }
+        }
+
+        // Update the proposal
+        this.proposalsTable.update(proposal, this.receiver);
+
+        processedCount++;
+
+        if (processedCount >= MAX_PROCESS) {
+          break;
+        }
       }
-      accounts = this.accountTable.next(accounts);
+
+      proposal = this.proposalsTable.next(proposal);
     }
 
-    check(totalEligible > 0, "No eligible voters found");
-
-    // Step 2: Get all votes for this proposal
-    let voters = this.propVotersTable.first();
-    let totalVotes = 0;
-    while(voters !== null) {
-      if (voters.proposalId == proposalId) {
-        totalVotes++;
-      }
-      voters = this.propVotersTable.next(voters);
-    }
-
-    // Step 3: Check participation
-    let percentParticipation = (totalVotes * 100) / totalEligible;
-    if (percentParticipation < 90) {
-      prop!.status = "failed";
-      this.proposalsTable.update(prop!, this.receiver);
-      return;
-    }
-
-    // Step 4: Evaluate outcome
-    if (prop!.yesCount > prop!.noCount) {
-      prop!.status = "passed";
-    } else {
-      prop!.status = "failed";
-    }
-
-    this.proposalsTable.update(prop!, this.receiver);
+    check(processedCount > 0, "No proposals were closed. Try again later.");
   }
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1692,21 +1707,18 @@ class voteProposalAction implements _chain.Packer {
 
 class closeProposalAction implements _chain.Packer {
     constructor (
-        public proposalId: u64 = 0,
         public sender: _chain.Name | null = null,
     ) {
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
-        enc.packNumber<u64>(this.proposalId);
         enc.pack(this.sender!);
         return enc.getBytes();
     }
     
     unpack(data: u8[]): usize {
         let dec = new _chain.Decoder(data);
-        this.proposalId = dec.unpackNumber<u64>();
         
         {
             let obj = new _chain.Name();
@@ -1718,7 +1730,6 @@ class closeProposalAction implements _chain.Packer {
 
     getSize(): usize {
         let size: usize = 0;
-        size += sizeof<u64>();
         size += this.sender!.getSize();
         return size;
     }
@@ -1841,7 +1852,7 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 		if (action == 0x44698556F4A80000) {//closeprop
             const args = new closeProposalAction();
             args.unpack(actionData);
-            mycontract.closeProposal(args.proposalId,args.sender!);
+            mycontract.closeProposal(args.sender!);
         }
 	}
   

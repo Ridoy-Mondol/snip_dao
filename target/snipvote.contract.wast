@@ -7,14 +7,13 @@
  (type $i32_i32_i32_=>_none (func (param i32 i32 i32)))
  (type $i32_i32_i64_i32_=>_i32 (func (param i32 i32 i64 i32) (result i32)))
  (type $i32_i32_i32_i32_=>_none (func (param i32 i32 i32 i32)))
- (type $i32_=>_i64 (func (param i32) (result i64)))
  (type $i32_i64_i32_=>_i32 (func (param i32 i64 i32) (result i32)))
+ (type $i32_=>_i64 (func (param i32) (result i64)))
  (type $i32_=>_none (func (param i32)))
  (type $i32_i64_=>_none (func (param i32 i64)))
  (type $i32_i32_i32_=>_i32 (func (param i32 i32 i32) (result i32)))
  (type $i64_=>_i32 (func (param i64) (result i32)))
  (type $i32_i32_i64_i32_=>_none (func (param i32 i32 i64 i32)))
- (type $i32_i64_i32_=>_none (func (param i32 i64 i32)))
  (type $i32_i32_i32_i32_=>_i32 (func (param i32 i32 i32 i32) (result i32)))
  (type $i32_i32_i32_i64_=>_i32 (func (param i32 i32 i32 i64) (result i32)))
  (type $i32_i32_i64_=>_i32 (func (param i32 i32 i64) (result i32)))
@@ -28,6 +27,7 @@
  (type $i32_i32_i32_i64_=>_none (func (param i32 i32 i32 i64)))
  (type $i32_i32_i64_i64_=>_none (func (param i32 i32 i64 i64)))
  (type $i32_i32_i64_i64_i64_i64_i64_i64_=>_none (func (param i32 i32 i64 i64 i64 i64 i64 i64)))
+ (type $i32_i64_i32_=>_none (func (param i32 i64 i32)))
  (type $i32_i64_i32_i32_=>_none (func (param i32 i64 i32 i32)))
  (type $i32_i64_i32_i64_=>_none (func (param i32 i64 i32 i64)))
  (type $i64_i64_i64_=>_none (func (param i64 i64 i64)))
@@ -422,40 +422,42 @@
  (data (i32.const 19320) "\01\00\00\004\00\00\00V\00o\00t\00e\00 \00m\00u\00s\00t\00 \00b\00e\00 \00\'\00y\00e\00s\00\'\00 \00o\00r\00 \00\'\00n\00o\00\'")
  (data (i32.const 19388) ",")
  (data (i32.const 19400) "\01\00\00\00\0e\00\00\00r\00e\00m\00o\00v\00e\00d")
- (data (i32.const 19436) "\\")
- (data (i32.const 19448) "\01\00\00\00F\00\00\00 \00t\00o\00k\00e\00n\00s\00 \00r\00e\00q\00u\00i\00r\00e\00d\00 \00t\00o\00 \00s\00u\00b\00m\00i\00t\00 \00p\00r\00o\00p\00o\00s\00a\00l")
- (data (i32.const 19532) "\1c")
- (data (i32.const 19544) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\00L")
- (data (i32.const 19564) "\1c")
- (data (i32.const 19576) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\00L")
- (data (i32.const 19596) "L")
- (data (i32.const 19608) "\01\00\00\00<\00\00\00D\00e\00a\00d\00l\00i\00n\00e\00 \00m\00u\00s\00t\00 \00b\00e\00 \00i\00n\00 \00t\00h\00e\00 \00f\00u\00t\00u\00r\00e")
- (data (i32.const 19676) "<")
- (data (i32.const 19688) "\01\00\00\00$\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00n\00o\00t\00 \00f\00o\00u\00n\00d")
- (data (i32.const 19740) "\\")
- (data (i32.const 19752) "\01\00\00\00H\00\00\00 \00t\00o\00k\00e\00n\00s\00 \00r\00e\00q\00u\00i\00r\00e\00d\00 \00t\00o\00 \00v\00o\00t\00e\00 \00i\00n\00 \00p\00r\00o\00p\00o\00s\00a\00l")
- (data (i32.const 19836) "\1c")
- (data (i32.const 19848) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\000M")
- (data (i32.const 19868) "\1c")
- (data (i32.const 19880) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\000M")
- (data (i32.const 19900) "L")
- (data (i32.const 19912) "\01\00\00\004\00\00\00V\00o\00t\00i\00n\00g\00 \00d\00e\00a\00d\00l\00i\00n\00e\00 \00h\00a\00s\00 \00p\00a\00s\00s\00e\00d")
- (data (i32.const 19980) "\\")
- (data (i32.const 19992) "\01\00\00\00D\00\00\00Y\00o\00u\00 \00a\00l\00r\00e\00a\00d\00y\00 \00v\00o\00t\00e\00d\00 \00i\00n\00 \00t\00h\00i\00s\00 \00p\00r\00o\00p\00o\00s\00a\00l")
- (data (i32.const 20076) "L")
- (data (i32.const 20088) "\01\00\00\00.\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00a\00l\00r\00e\00a\00d\00y\00 \00c\00l\00o\00s\00e\00d")
- (data (i32.const 20156) "<")
- (data (i32.const 20168) "\01\00\00\00\1e\00\00\00V\00o\00t\00e\00 \00s\00t\00i\00l\00l\00 \00o\00p\00e\00n")
- (data (i32.const 20220) "L")
- (data (i32.const 20232) "\01\00\00\002\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00c\00o\00n\00f\00i\00g\00 \00n\00o\00t\00 \00f\00o\00u\00n\00d")
- (data (i32.const 20300) "L")
- (data (i32.const 20312) "\01\00\00\000\00\00\00N\00o\00 \00e\00l\00i\00g\00i\00b\00l\00e\00 \00v\00o\00t\00e\00r\00s\00 \00f\00o\00u\00n\00d")
- (data (i32.const 20380) "\1c")
- (data (i32.const 20392) "\01\00\00\00\0c\00\00\00p\00a\00s\00s\00e\00d")
- (data (i32.const 20412) "<")
- (data (i32.const 20424) "\01\00\00\00\1e\00\00\00i\00d\00x\006\004\00:\00 \00b\00a\00d\00 \00t\00y\00p\00e")
- (data (i32.const 20476) "<")
- (data (i32.const 20488) "\01\00\00\00 \00\00\00i\00d\00x\006\004\00:\00 \00b\00a\00d\00 \00v\00a\00l\00u\00e")
+ (data (i32.const 19436) ",")
+ (data (i32.const 19448) "\01\00\00\00\10\00\00\00r\00e\00c\00a\00l\00l\00e\00d")
+ (data (i32.const 19484) "\8c")
+ (data (i32.const 19496) "\01\00\00\00|\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00c\00o\00n\00f\00i\00g\00 \00n\00o\00t\00 \00f\00o\00u\00n\00d\00.\00 \00P\00l\00e\00a\00s\00e\00 \00i\00n\00i\00t\00i\00a\00l\00i\00z\00e\00 \00t\00h\00e\00 \00c\00o\00n\00f\00i\00g\00 \00f\00i\00r\00s\00t\00.")
+ (data (i32.const 19628) "\\")
+ (data (i32.const 19640) "\01\00\00\00F\00\00\00 \00t\00o\00k\00e\00n\00s\00 \00r\00e\00q\00u\00i\00r\00e\00d\00 \00t\00o\00 \00s\00u\00b\00m\00i\00t\00 \00p\00r\00o\00p\00o\00s\00a\00l")
+ (data (i32.const 19724) "\1c")
+ (data (i32.const 19736) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\c0L")
+ (data (i32.const 19756) "\1c")
+ (data (i32.const 19768) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\c0L")
+ (data (i32.const 19788) "L")
+ (data (i32.const 19800) "\01\00\00\00<\00\00\00D\00e\00a\00d\00l\00i\00n\00e\00 \00m\00u\00s\00t\00 \00b\00e\00 \00i\00n\00 \00t\00h\00e\00 \00f\00u\00t\00u\00r\00e")
+ (data (i32.const 19868) "<")
+ (data (i32.const 19880) "\01\00\00\00$\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00n\00o\00t\00 \00f\00o\00u\00n\00d")
+ (data (i32.const 19932) "\\")
+ (data (i32.const 19944) "\01\00\00\00H\00\00\00 \00t\00o\00k\00e\00n\00s\00 \00r\00e\00q\00u\00i\00r\00e\00d\00 \00t\00o\00 \00v\00o\00t\00e\00 \00i\00n\00 \00p\00r\00o\00p\00o\00s\00a\00l")
+ (data (i32.const 20028) "\1c")
+ (data (i32.const 20040) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\f0M")
+ (data (i32.const 20060) "\1c")
+ (data (i32.const 20072) "b\00\00\00\0c\00\00\00\d05\00\00\00\00\00\00\f0M")
+ (data (i32.const 20092) "L")
+ (data (i32.const 20104) "\01\00\00\004\00\00\00V\00o\00t\00i\00n\00g\00 \00d\00e\00a\00d\00l\00i\00n\00e\00 \00h\00a\00s\00 \00p\00a\00s\00s\00e\00d")
+ (data (i32.const 20172) "\\")
+ (data (i32.const 20184) "\01\00\00\00D\00\00\00Y\00o\00u\00 \00a\00l\00r\00e\00a\00d\00y\00 \00v\00o\00t\00e\00d\00 \00i\00n\00 \00t\00h\00i\00s\00 \00p\00r\00o\00p\00o\00s\00a\00l")
+ (data (i32.const 20268) "L")
+ (data (i32.const 20280) "\01\00\00\002\00\00\00P\00r\00o\00p\00o\00s\00a\00l\00 \00c\00o\00n\00f\00i\00g\00 \00n\00o\00t\00 \00f\00o\00u\00n\00d")
+ (data (i32.const 20348) "L")
+ (data (i32.const 20360) "\01\00\00\000\00\00\00N\00o\00 \00e\00l\00i\00g\00i\00b\00l\00e\00 \00v\00o\00t\00e\00r\00s\00 \00f\00o\00u\00n\00d")
+ (data (i32.const 20428) "\1c")
+ (data (i32.const 20440) "\01\00\00\00\0c\00\00\00p\00a\00s\00s\00e\00d")
+ (data (i32.const 20460) "l")
+ (data (i32.const 20472) "\01\00\00\00T\00\00\00N\00o\00 \00p\00r\00o\00p\00o\00s\00a\00l\00s\00 \00w\00e\00r\00e\00 \00c\00l\00o\00s\00e\00d\00.\00 \00T\00r\00y\00 \00a\00g\00a\00i\00n\00 \00l\00a\00t\00e\00r\00.")
+ (data (i32.const 20572) "<")
+ (data (i32.const 20584) "\01\00\00\00\1e\00\00\00i\00d\00x\006\004\00:\00 \00b\00a\00d\00 \00t\00y\00p\00e")
+ (data (i32.const 20636) "<")
+ (data (i32.const 20648) "\01\00\00\00 \00\00\00i\00d\00x\006\004\00:\00 \00b\00a\00d\00 \00v\00a\00l\00u\00e")
  (table $0 3 funcref)
  (elem $0 (i32.const 1) $start:~lib/as-chain/name~anonymous|0 $snipvote.contract/snipvoting#declareWinners~anonymous|0)
  (export "snipvoting" (global $snipvote.contract/snipvoting))
@@ -18581,6 +18583,32 @@
    )
   )
  )
+ (func $~lib/proton-tsc/modules/store/store/TableStore<tables/moderatorCand.table/ModeratorCandTable>#update (param $0 i32) (param $1 i32) (param $2 i32)
+  (local $3 i64)
+  (local $4 i32)
+  (local.set $3
+   (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
+    (local.get $1)
+   )
+  )
+  (local.set $4
+   (call $~lib/as-chain/mi/MultiIndex<tables/moderatorCand.table/ModeratorCandTable>#requireFind
+    (i32.load
+     (local.get $0)
+    )
+    (local.get $3)
+    (i32.const 1424)
+   )
+  )
+  (call $~lib/as-chain/mi/MultiIndex<tables/moderatorCand.table/ModeratorCandTable>#update
+   (i32.load
+    (local.get $0)
+   )
+   (local.get $4)
+   (local.get $1)
+   (local.get $2)
+  )
+ )
  (func $snipvote.contract/snipvoting#moderatorVote (param $0 i32) (param $1 i32) (param $2 i32) (param $3 i32)
   (local $4 i32)
   (local $5 i32)
@@ -18941,7 +18969,7 @@
     (local.get $0)
    )
   )
-  (local.set $9
+  (local.set $10
    (call $tables/moderatorVoter.table/ModeratorVotersTable#getPrimaryValue
     (local.get $1)
    )
@@ -18953,7 +18981,7 @@
       (i32.load
        (local.get $4)
       )
-      (local.get $9)
+      (local.get $10)
      )
     )
    )
@@ -18971,7 +18999,7 @@
     )
    )
   )
-  (local.set $10
+  (local.set $9
    (call $tables/moderatorVoter.table/ModeratorVotersTable#getPrimaryValue
     (local.get $1)
    )
@@ -19001,13 +19029,13 @@
       (local.get $8)
      )
      (local.get $13)
-     (local.get $10)
+     (local.get $9)
      (i32.load offset=4
       (local.get $12)
      )
      (local.get $14)
     )
-    (local.get $10)
+    (local.get $9)
     (i32.const 1)
    )
   )
@@ -19049,7 +19077,7 @@
   )
   (if
    (i64.ge_u
-    (local.tee $10
+    (local.tee $9
      (call $tables/moderatorVoter.table/ModeratorVotersTable#getPrimaryValue
       (local.get $1)
      )
@@ -19063,11 +19091,11 @@
     (select
      (i64.const -2)
      (i64.add
-      (local.get $10)
+      (local.get $9)
       (i64.const 1)
      )
      (i64.ge_u
-      (local.get $10)
+      (local.get $9)
       (i64.const -2)
      )
     )
@@ -19075,7 +19103,7 @@
   )
   (if
    (i64.ge_u
-    (local.get $9)
+    (local.get $10)
     (i64.load offset=8
      (local.get $4)
     )
@@ -19085,11 +19113,11 @@
     (select
      (i64.const -2)
      (i64.add
-      (local.get $9)
+      (local.get $10)
       (i64.const 1)
      )
      (i64.ge_u
-      (local.get $9)
+      (local.get $10)
       (i64.const -2)
      )
     )
@@ -19131,7 +19159,7 @@
         (local.get $0)
        )
       )
-      (local.set $9
+      (local.set $10
        (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
         (local.get $1)
        )
@@ -19143,7 +19171,7 @@
           (i32.load
            (local.get $3)
           )
-          (local.get $9)
+          (local.get $10)
          )
         )
        )
@@ -19161,7 +19189,7 @@
         )
        )
       )
-      (local.set $10
+      (local.set $9
        (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
         (local.get $1)
        )
@@ -19191,13 +19219,13 @@
           (local.get $7)
          )
          (local.get $13)
-         (local.get $10)
+         (local.get $9)
          (i32.load offset=4
           (local.get $8)
          )
          (local.get $11)
         )
-        (local.get $10)
+        (local.get $9)
         (i32.const 1)
        )
       )
@@ -19239,7 +19267,7 @@
       )
       (if
        (i64.ge_u
-        (local.tee $10
+        (local.tee $9
          (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
           (local.get $1)
          )
@@ -19253,11 +19281,11 @@
         (select
          (i64.const -2)
          (i64.add
-          (local.get $10)
+          (local.get $9)
           (i64.const 1)
          )
          (i64.ge_u
-          (local.get $10)
+          (local.get $9)
           (i64.const -2)
          )
         )
@@ -19265,7 +19293,7 @@
       )
       (if
        (i64.ge_u
-        (local.get $9)
+        (local.get $10)
         (i64.load offset=8
          (local.get $3)
         )
@@ -19275,11 +19303,11 @@
         (select
          (i64.const -2)
          (i64.add
-          (local.get $9)
+          (local.get $10)
           (i64.const 1)
          )
          (i64.ge_u
-          (local.get $9)
+          (local.get $10)
           (i64.const -2)
          )
         )
@@ -19299,37 +19327,14 @@
       )
      )
     )
-    (local.set $1
-     (i32.load
-      (local.get $0)
-     )
-    )
-    (local.set $0
+    (call $~lib/proton-tsc/modules/store/store/TableStore<tables/moderatorCand.table/ModeratorCandTable>#update
      (i32.load offset=36
       (local.get $0)
      )
-    )
-    (local.set $9
-     (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
-      (local.get $6)
-     )
-    )
-    (local.set $2
-     (call $~lib/as-chain/mi/MultiIndex<tables/moderatorCand.table/ModeratorCandTable>#requireFind
-      (i32.load
-       (local.get $0)
-      )
-      (local.get $9)
-      (i32.const 1424)
-     )
-    )
-    (call $~lib/as-chain/mi/MultiIndex<tables/moderatorCand.table/ModeratorCandTable>#update
+     (local.get $6)
      (i32.load
       (local.get $0)
      )
-     (local.get $2)
-     (local.get $6)
-     (local.get $1)
     )
    )
   )
@@ -21055,6 +21060,57 @@
       )
      )
     )
+    (local.set $1
+     (i32.load offset=36
+      (local.get $0)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $6)
+     )
+     (unreachable)
+    )
+    (local.set $3
+     (local.tee $1
+      (call $~lib/proton-tsc/modules/store/store/TableStore<tables/moderatorCand.table/ModeratorCandTable>#get
+       (local.get $1)
+       (i64.load
+        (i32.load offset=8
+         (local.get $6)
+        )
+       )
+      )
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $1)
+     )
+     (unreachable)
+    )
+    (call $tables/candidates.table/CandidatesTable#set:status
+     (local.get $3)
+     (i32.const 19456)
+    )
+    (local.set $4
+     (i32.load offset=36
+      (local.get $0)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $1)
+     )
+     (unreachable)
+    )
+    (call $~lib/proton-tsc/modules/store/store/TableStore<tables/moderatorCand.table/ModeratorCandTable>#update
+     (local.get $4)
+     (local.get $3)
+     (i32.load
+      (local.get $0)
+     )
+    )
    )
    (block
     (if
@@ -22168,27 +22224,18 @@
   (call $~lib/as-chain/action/requireAuth
    (local.get $1)
   )
-  (local.set $7
-   (call $~lib/proton-tsc/modules/store/store/TableStore<tables/propConfig.table/PropConfigTable>#get
-    (i32.load offset=64
-     (local.get $0)
-    )
-   )
-  )
-  (local.set $9
+  (call $~lib/as-chain/system/check
    (i32.ne
-    (local.tee $8
-     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/account.table/AccountsTable>#get
-      (i32.load offset=68
+    (local.tee $7
+     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/propConfig.table/PropConfigTable>#get
+      (i32.load offset=64
        (local.get $0)
-      )
-      (i64.load
-       (local.get $1)
       )
      )
     )
     (i32.const 0)
    )
+   (i32.const 19504)
   )
   (if
    (i32.eqz
@@ -22196,63 +22243,94 @@
    )
    (unreachable)
   )
-  (call $~lib/rt/common/OBJECT#set:gcInfo
-   (i32.const 19552)
-   (call $~lib/util/number/utoa64
+  (if
+   (i64.ne
     (i64.load offset=8
      (local.get $7)
     )
+    (i64.const 0)
    )
-  )
-  (call $~lib/as-chain/system/check
-   (local.get $9)
-   (call $~lib/staticarray/StaticArray<~lib/string/String>#join
-    (i32.const 19552)
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $8)
-   )
-   (unreachable)
-  )
-  (local.set $10
-   (i64.load offset=16
-    (local.get $8)
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $7)
-   )
-   (unreachable)
-  )
-  (local.set $8
-   (i64.ge_u
-    (local.get $10)
-    (i64.load offset=8
-     (local.get $7)
+   (block
+    (local.set $9
+     (i32.ne
+      (local.tee $8
+       (call $~lib/proton-tsc/modules/store/store/TableStore<tables/account.table/AccountsTable>#get
+        (i32.load offset=68
+         (local.get $0)
+        )
+        (i64.load
+         (local.get $1)
+        )
+       )
+      )
+      (i32.const 0)
+     )
     )
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $7)
-   )
-   (unreachable)
-  )
-  (call $~lib/rt/common/OBJECT#set:gcInfo
-   (i32.const 19584)
-   (call $~lib/util/number/utoa64
-    (i64.load offset=8
-     (local.get $7)
+    (if
+     (i32.eqz
+      (local.get $7)
+     )
+     (unreachable)
     )
-   )
-  )
-  (call $~lib/as-chain/system/check
-   (local.get $8)
-   (call $~lib/staticarray/StaticArray<~lib/string/String>#join
-    (i32.const 19584)
+    (call $~lib/rt/common/OBJECT#set:gcInfo
+     (i32.const 19744)
+     (call $~lib/util/number/utoa64
+      (i64.load offset=8
+       (local.get $7)
+      )
+     )
+    )
+    (call $~lib/as-chain/system/check
+     (local.get $9)
+     (call $~lib/staticarray/StaticArray<~lib/string/String>#join
+      (i32.const 19744)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $8)
+     )
+     (unreachable)
+    )
+    (local.set $10
+     (i64.load offset=16
+      (local.get $8)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $7)
+     )
+     (unreachable)
+    )
+    (local.set $8
+     (i64.ge_u
+      (local.get $10)
+      (i64.load offset=8
+       (local.get $7)
+      )
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $7)
+     )
+     (unreachable)
+    )
+    (call $~lib/rt/common/OBJECT#set:gcInfo
+     (i32.const 19776)
+     (call $~lib/util/number/utoa64
+      (i64.load offset=8
+       (local.get $7)
+      )
+     )
+    )
+    (call $~lib/as-chain/system/check
+     (local.get $8)
+     (call $~lib/staticarray/StaticArray<~lib/string/String>#join
+      (i32.const 19776)
+     )
+    )
    )
   )
   (call $~lib/as-chain/system/check
@@ -22262,7 +22340,7 @@
      (call $~lib/as-chain/system/currentTimeSec)
     )
    )
-   (i32.const 19616)
+   (i32.const 19808)
   )
   (local.set $1
    (call $tables/proposals.table/ProposalsTable#constructor
@@ -22413,56 +22491,6 @@
   )
   (local.get $0)
  )
- (func $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#get (param $0 i32) (param $1 i64) (result i32)
-  (local $2 i32)
-  (local $3 i32)
-  (block $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#getByKey (result i32)
-   (drop
-    (br_if $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#getByKey
-     (i32.const 0)
-     (i32.eqz
-      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-       (local.tee $2
-        (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#find
-         (local.tee $0
-          (i32.load
-           (local.get $0)
-          )
-         )
-         (local.get $1)
-        )
-       )
-      )
-     )
-    )
-   )
-   (block $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#get (result i32)
-    (local.set $3
-     (i32.load
-      (local.get $0)
-     )
-    )
-    (drop
-     (br_if $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#get
-      (i32.const 0)
-      (i32.eqz
-       (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-        (local.tee $0
-         (local.get $2)
-        )
-       )
-      )
-     )
-    )
-    (call $~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#getEx
-     (local.get $3)
-     (i32.load offset=4
-      (local.get $0)
-     )
-    )
-   )
-  )
- )
  (func $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#constructor (param $0 i32) (param $1 i32) (param $2 i64) (param $3 i32) (result i32)
   (local $4 i32)
   (call $~lib/rt/common/BLOCK#set:mmInfo
@@ -22590,46 +22618,39 @@
    (local.get $1)
   )
  )
- (func $~lib/as-chain/dbi64/DBI64<tables/propVoter.table/PropVotersTable>#getEx (param $0 i32) (param $1 i32) (result i32)
+ (func $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#requireFind (param $0 i32) (param $1 i64) (param $2 i32) (result i32)
+  (call $~lib/as-chain/system/check
+   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+    (local.tee $0
+     (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#find
+      (local.get $0)
+      (local.get $1)
+     )
+    )
+   )
+   (local.get $2)
+  )
+  (local.get $0)
+ )
+ (func $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue (param $0 i32) (result i32)
   (if
    (i32.eqz
-    (local.tee $0
-     (call $~lib/as-chain/env/db_get_i64
-      (local.get $1)
-      (i32.const 0)
-      (i32.const 0)
-     )
+    (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+     (local.get $0)
     )
    )
    (return
     (i32.const 0)
    )
   )
-  (drop
-   (call $~lib/as-chain/env/db_get_i64
-    (local.get $1)
-    (i32.load offset=4
-     (local.tee $1
-      (call $~lib/array/Array<u8>#constructor
-       (local.get $0)
-      )
-     )
-    )
+  (call $~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#getEx
+   (i32.load
+    (local.get $0)
+   )
+   (i32.load offset=4
     (local.get $0)
    )
   )
-  (global.set $~argumentsLength
-   (i32.const 0)
-  )
-  (drop
-   (call $tables/propVoter.table/PropVotersTable#unpack
-    (local.tee $0
-     (call $tables/propVoter.table/PropVotersTable#constructor@varargs)
-    )
-    (local.get $1)
-   )
-  )
-  (local.get $0)
  )
  (func $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#update (param $0 i32) (param $1 i32) (param $2 i32) (param $3 i32)
   (local $4 i64)
@@ -22669,25 +22690,8 @@
      (if
       (i32.eqz
        (local.tee $6
-        (block $__inlined_func$~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue (result i32)
-         (drop
-          (br_if $__inlined_func$~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue
-           (i32.const 0)
-           (i32.eqz
-            (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-             (local.get $1)
-            )
-           )
-          )
-         )
-         (call $~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#getEx
-          (i32.load
-           (local.get $1)
-          )
-          (i32.load offset=4
-           (local.get $1)
-          )
-         )
+        (call $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue
+         (local.get $1)
         )
        )
       )
@@ -22841,20 +22845,16 @@
  )
  (func $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#update (param $0 i32) (param $1 i32) (param $2 i32)
   (local $3 i32)
-  (call $~lib/as-chain/system/check
-   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-    (local.tee $3
-     (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#find
-      (i32.load
-       (local.get $0)
-      )
-      (i64.load
-       (local.get $1)
-      )
-     )
+  (local.set $3
+   (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#requireFind
+    (i32.load
+     (local.get $0)
     )
+    (i64.load
+     (local.get $1)
+    )
+    (i32.const 1424)
    )
-   (i32.const 1424)
   )
   (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#update
    (i32.load
@@ -22920,103 +22920,165 @@
   )
   (call $~lib/as-chain/system/check
    (i32.ne
-    (local.tee $4
-     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#get
-      (i32.load offset=56
-       (local.get $0)
-      )
-      (local.get $2)
-     )
-    )
-    (i32.const 0)
-   )
-   (i32.const 19696)
-  )
-  (local.set $5
-   (call $~lib/proton-tsc/modules/store/store/TableStore<tables/propConfig.table/PropConfigTable>#get
-    (i32.load offset=64
-     (local.get $0)
-    )
-   )
-  )
-  (local.set $7
-   (i32.ne
     (local.tee $6
-     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/account.table/AccountsTable>#get
-      (i32.load offset=68
-       (local.get $0)
+     (block $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#getByKey (result i32)
+      (drop
+       (br_if $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#getByKey
+        (i32.const 0)
+        (i32.eqz
+         (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+          (local.tee $4
+           (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#find
+            (local.tee $5
+             (i32.load
+              (i32.load offset=56
+               (local.get $0)
+              )
+             )
+            )
+            (local.get $2)
+           )
+          )
+         )
+        )
+       )
       )
-      (i64.load
-       (local.get $1)
+      (block $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#get (result i32)
+       (local.set $5
+        (i32.load
+         (local.get $5)
+        )
+       )
+       (drop
+        (br_if $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#get
+         (i32.const 0)
+         (i32.eqz
+          (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+           (local.get $4)
+          )
+         )
+        )
+       )
+       (call $~lib/as-chain/dbi64/DBI64<tables/proposals.table/ProposalsTable>#getEx
+        (local.get $5)
+        (i32.load offset=4
+         (local.get $4)
+        )
+       )
       )
      )
     )
     (i32.const 0)
    )
-  )
-  (if
-   (i32.eqz
-    (local.get $5)
-   )
-   (unreachable)
-  )
-  (call $~lib/rt/common/OBJECT#set:gcInfo
-   (i32.const 19856)
-   (call $~lib/util/number/utoa64
-    (i64.load offset=16
-     (local.get $5)
-    )
-   )
-  )
-  (call $~lib/as-chain/system/check
-   (local.get $7)
-   (call $~lib/staticarray/StaticArray<~lib/string/String>#join
-    (i32.const 19856)
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $6)
-   )
-   (unreachable)
-  )
-  (local.set $8
-   (i64.load offset=16
-    (local.get $6)
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $5)
-   )
-   (unreachable)
-  )
-  (local.set $6
-   (i64.ge_u
-    (local.get $8)
-    (i64.load offset=16
-     (local.get $5)
-    )
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $5)
-   )
-   (unreachable)
-  )
-  (call $~lib/rt/common/OBJECT#set:gcInfo
    (i32.const 19888)
-   (call $~lib/util/number/utoa64
-    (i64.load offset=16
-     (local.get $5)
-    )
-   )
   )
   (call $~lib/as-chain/system/check
-   (local.get $6)
-   (call $~lib/staticarray/StaticArray<~lib/string/String>#join
-    (i32.const 19888)
+   (i32.ne
+    (local.tee $4
+     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/propConfig.table/PropConfigTable>#get
+      (i32.load offset=64
+       (local.get $0)
+      )
+     )
+    )
+    (i32.const 0)
+   )
+   (i32.const 19504)
+  )
+  (if
+   (i32.eqz
+    (local.get $4)
+   )
+   (unreachable)
+  )
+  (if
+   (i64.ne
+    (i64.load offset=16
+     (local.get $4)
+    )
+    (i64.const 0)
+   )
+   (block
+    (local.set $7
+     (i32.ne
+      (local.tee $5
+       (call $~lib/proton-tsc/modules/store/store/TableStore<tables/account.table/AccountsTable>#get
+        (i32.load offset=68
+         (local.get $0)
+        )
+        (i64.load
+         (local.get $1)
+        )
+       )
+      )
+      (i32.const 0)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $4)
+     )
+     (unreachable)
+    )
+    (call $~lib/rt/common/OBJECT#set:gcInfo
+     (i32.const 20048)
+     (call $~lib/util/number/utoa64
+      (i64.load offset=16
+       (local.get $4)
+      )
+     )
+    )
+    (call $~lib/as-chain/system/check
+     (local.get $7)
+     (call $~lib/staticarray/StaticArray<~lib/string/String>#join
+      (i32.const 20048)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $5)
+     )
+     (unreachable)
+    )
+    (local.set $8
+     (i64.load offset=16
+      (local.get $5)
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $4)
+     )
+     (unreachable)
+    )
+    (local.set $5
+     (i64.ge_u
+      (local.get $8)
+      (i64.load offset=16
+       (local.get $4)
+      )
+     )
+    )
+    (if
+     (i32.eqz
+      (local.get $4)
+     )
+     (unreachable)
+    )
+    (call $~lib/rt/common/OBJECT#set:gcInfo
+     (i32.const 20080)
+     (call $~lib/util/number/utoa64
+      (i64.load offset=16
+       (local.get $4)
+      )
+     )
+    )
+    (call $~lib/as-chain/system/check
+     (local.get $5)
+     (call $~lib/staticarray/StaticArray<~lib/string/String>#join
+      (i32.const 20080)
+     )
+    )
    )
   )
   (local.set $8
@@ -23026,7 +23088,7 @@
   )
   (if
    (i32.eqz
-    (local.get $4)
+    (local.get $6)
    )
    (unreachable)
   )
@@ -23034,66 +23096,91 @@
    (i64.lt_u
     (local.get $8)
     (i64.load offset=48
-     (local.get $4)
+     (local.get $6)
     )
    )
-   (i32.const 19920)
+   (i32.const 20112)
   )
-  (call $~lib/as-chain/system/check
-   (i32.eqz
-    (block $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#getByKey (result i32)
-     (drop
-      (br_if $__inlined_func$~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#getByKey
-       (i32.const 0)
-       (i32.eqz
-        (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-         (local.tee $6
-          (call $~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#find
-           (local.tee $7
-            (i32.load
-             (i32.load offset=60
-              (local.get $0)
-             )
-            )
-           )
-           (i64.add
-            (local.get $2)
-            (i64.load
-             (local.get $1)
-            )
+  (local.set $4
+   (i32.const 0)
+  )
+  (if
+   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+    (local.tee $5
+     (call $~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#find
+      (local.tee $7
+       (i32.load
+        (i32.load offset=60
+         (local.get $0)
+        )
+       )
+      )
+      (i64.add
+       (local.get $2)
+       (i64.load
+        (local.get $1)
+       )
+      )
+     )
+    )
+   )
+   (block
+    (drop
+     (i32.load
+      (local.get $7)
+     )
+    )
+    (if
+     (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+      (local.get $5)
+     )
+     (if
+      (local.tee $5
+       (call $~lib/as-chain/env/db_get_i64
+        (local.tee $7
+         (i32.load offset=4
+          (local.get $5)
+         )
+        )
+        (i32.const 0)
+        (i32.const 0)
+       )
+      )
+      (block
+       (drop
+        (call $~lib/as-chain/env/db_get_i64
+         (local.get $7)
+         (i32.load offset=4
+          (local.tee $7
+           (call $~lib/array/Array<u8>#constructor
+            (local.get $5)
            )
           )
          )
+         (local.get $5)
         )
        )
-      )
-     )
-     (block $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/propVoter.table/PropVotersTable>#get (result i32)
-      (local.set $7
-       (i32.load
-        (local.get $7)
-       )
-      )
-      (drop
-       (br_if $__inlined_func$~lib/as-chain/dbi64/DBI64<tables/propVoter.table/PropVotersTable>#get
+       (global.set $~argumentsLength
         (i32.const 0)
-        (i32.eqz
-         (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-          (local.get $6)
-         )
-        )
        )
-      )
-      (call $~lib/as-chain/dbi64/DBI64<tables/propVoter.table/PropVotersTable>#getEx
-       (local.get $7)
-       (i32.load offset=4
-        (local.get $6)
+       (drop
+        (call $tables/propVoter.table/PropVotersTable#unpack
+         (local.tee $4
+          (call $tables/propVoter.table/PropVotersTable#constructor@varargs)
+         )
+         (local.get $7)
+        )
        )
       )
      )
     )
    )
-   (i32.const 20000)
+  )
+  (call $~lib/as-chain/system/check
+   (i32.eqz
+    (local.get $4)
+   )
+   (i32.const 20192)
   )
   (call $~lib/as-chain/system/check
    (if (result i32)
@@ -23129,21 +23216,21 @@
    (block
     (if
      (i32.eqz
-      (local.get $4)
+      (local.get $6)
      )
      (unreachable)
     )
     (if
      (i32.eqz
-      (local.get $4)
+      (local.get $6)
      )
      (unreachable)
     )
     (call $tables/elections.table/ElectionsTable#set:registrationEndTime
-     (local.get $4)
+     (local.get $6)
      (i64.add
       (i64.load offset=32
-       (local.get $4)
+       (local.get $6)
       )
       (i64.const 1)
      )
@@ -23161,21 +23248,21 @@
     (block
      (if
       (i32.eqz
-       (local.get $4)
+       (local.get $6)
       )
       (unreachable)
      )
      (if
       (i32.eqz
-       (local.get $4)
+       (local.get $6)
       )
       (unreachable)
      )
      (call $tables/elections.table/ElectionsTable#set:candidateStakeAmount
-      (local.get $4)
+      (local.get $6)
       (i64.add
        (i64.load offset=40
-        (local.get $4)
+        (local.get $6)
        )
        (i64.const 1)
       )
@@ -23183,20 +23270,20 @@
     )
    )
   )
-  (local.set $5
+  (local.set $4
    (i32.load offset=56
     (local.get $0)
    )
   )
   (if
    (i32.eqz
-    (local.get $4)
+    (local.get $6)
    )
    (unreachable)
   )
   (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#update
-   (local.get $5)
    (local.get $4)
+   (local.get $6)
    (i32.load
     (local.get $0)
    )
@@ -23213,7 +23300,7 @@
     (local.get $0)
    )
   )
-  (local.set $4
+  (local.set $6
    (i32.load offset=60
     (local.get $0)
    )
@@ -23228,7 +23315,7 @@
     (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
      (call $~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#find
       (i32.load
-       (local.get $4)
+       (local.get $6)
       )
       (local.get $2)
      )
@@ -23236,14 +23323,14 @@
    )
    (i32.const 1200)
   )
-  (local.set $5
+  (local.set $4
    (i32.const 0)
   )
   (local.set $7
    (i32.load
-    (local.tee $6
+    (local.tee $5
      (i32.load
-      (local.get $4)
+      (local.get $6)
      )
     )
    )
@@ -23293,10 +23380,10 @@
   (loop $for-loop|0
    (if
     (i32.lt_s
-     (local.get $5)
+     (local.get $4)
      (i32.load offset=12
       (i32.load offset=4
-       (local.get $6)
+       (local.get $5)
       )
      )
     )
@@ -23304,9 +23391,9 @@
      (call $~lib/as-chain/idxdb/IDXDB#storeEx@virtual
       (call $~lib/array/Array<~lib/as-chain/name/Name>#__get
        (i32.load offset=4
-        (local.get $6)
+        (local.get $5)
        )
-       (local.get $5)
+       (local.get $4)
       )
       (call $tables/modrecallvoter.table/ModRecallVotersTable#getPrimaryValue
        (local.get $0)
@@ -23316,9 +23403,9 @@
        (local.get $3)
       )
      )
-     (local.set $5
+     (local.set $4
       (i32.add
-       (local.get $5)
+       (local.get $4)
        (i32.const 1)
       )
      )
@@ -23334,11 +23421,11 @@
      )
     )
     (i64.load offset=8
-     (local.get $6)
+     (local.get $5)
     )
    )
    (call $tables/elections.table/ElectionsTable#set:startTime
-    (local.get $6)
+    (local.get $5)
     (select
      (i64.const -2)
      (i64.add
@@ -23356,11 +23443,11 @@
    (i64.ge_u
     (local.get $2)
     (i64.load offset=8
-     (local.get $4)
+     (local.get $6)
     )
    )
    (call $tables/elections.table/ElectionsTable#set:startTime
-    (local.get $4)
+    (local.get $6)
     (select
      (i64.const -2)
      (i64.add
@@ -23395,85 +23482,25 @@
    )
   )
  )
- (func $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#getValue (param $0 i32) (result i32)
-  (if
-   (i32.eqz
-    (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-     (local.get $0)
-    )
-   )
-   (return
-    (i32.const 0)
-   )
-  )
-  (call $~lib/as-chain/dbi64/DBI64<tables/propVoter.table/PropVotersTable>#getEx
-   (i32.load
-    (local.get $0)
-   )
-   (i32.load offset=4
-    (local.get $0)
-   )
-  )
- )
- (func $snipvote.contract/snipvoting#closeProposal (param $0 i32) (param $1 i64) (param $2 i32)
+ (func $snipvote.contract/snipvoting#closeProposal (param $0 i32) (param $1 i32)
+  (local $2 i32)
   (local $3 i32)
   (local $4 i32)
   (local $5 i32)
   (local $6 i32)
-  (local $7 i32)
-  (local $8 i64)
+  (local $7 i64)
+  (local $8 i32)
   (call $~lib/as-chain/action/requireAuth
-   (local.get $2)
+   (local.get $1)
   )
   (call $~lib/as-chain/system/check
-   (i32.ne
-    (local.tee $2
-     (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#get
-      (i32.load offset=56
-       (local.get $0)
-      )
-      (local.get $1)
-     )
-    )
-    (i32.const 0)
-   )
-   (i32.const 19696)
-  )
-  (if
-   (i32.eqz
-    (local.get $2)
-   )
-   (unreachable)
-  )
-  (call $~lib/as-chain/system/check
-   (i64.eq
-    (call $utils/index/stringToU64
-     (i32.load offset=56
-      (local.get $2)
-     )
-    )
-    (call $utils/index/stringToU64
-     (i32.const 3024)
+   (call $~lib/array/Array<~lib/string/String>#includes
+    (i32.const 2464)
+    (call $~lib/as-chain/name/Name#toString
+     (local.get $1)
     )
    )
-   (i32.const 20096)
-  )
-  (if
-   (i32.eqz
-    (local.get $2)
-   )
-   (unreachable)
-  )
-  (call $~lib/as-chain/system/check
-   (i64.lt_u
-    (i64.load offset=48
-     (local.get $2)
-    )
-    (i64.extend_i32_u
-     (call $~lib/as-chain/system/currentTimeSec)
-    )
-   )
-   (i32.const 20176)
+   (i32.const 15344)
   )
   (call $~lib/as-chain/system/check
    (i32.ne
@@ -23486,15 +23513,15 @@
     )
     (i32.const 0)
    )
-   (i32.const 20240)
+   (i32.const 20288)
   )
-  (local.set $4
-   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#getValue
-    (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#constructor
-     (local.tee $4
+  (local.set $2
+   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue
+    (call $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#constructor
+     (local.tee $1
       (i32.load
        (i32.load
-        (i32.load offset=68
+        (i32.load offset=56
          (local.get $0)
         )
        )
@@ -23502,13 +23529,13 @@
      )
      (call $~lib/as-chain/env/db_lowerbound_i64
       (i64.load
-       (local.get $4)
+       (local.get $1)
       )
       (i64.load offset=8
-       (local.get $4)
+       (local.get $1)
       )
       (i64.load offset=16
-       (local.get $4)
+       (local.get $1)
       )
       (i64.const 0)
      )
@@ -23519,80 +23546,262 @@
   )
   (loop $while-continue|0
    (if
-    (local.get $4)
-    (block
-     (local.set $6
-      (i32.add
-       (local.get $3)
-       (i32.const 1)
-      )
-     )
-     (local.set $8
-      (i64.load offset=16
-       (local.get $4)
+    (local.get $2)
+    (block $while-break|0
+     (local.set $1
+      (i64.eq
+       (call $utils/index/stringToU64
+        (i32.load offset=56
+         (local.get $2)
+        )
+       )
+       (call $utils/index/stringToU64
+        (i32.const 3024)
+       )
       )
      )
      (if
-      (i32.eqz
-       (local.get $5)
-      )
-      (unreachable)
-     )
-     (local.set $3
       (select
-       (local.get $6)
-       (local.get $3)
-       (i64.ge_u
-        (local.get $8)
-        (i64.load offset=16
-         (local.get $5)
+       (i64.lt_u
+        (i64.load offset=48
+         (local.get $2)
+        )
+        (i64.extend_i32_u
+         (call $~lib/as-chain/system/currentTimeSec)
         )
        )
+       (i32.const 0)
+       (local.get $1)
       )
-     )
-     (call $~lib/as-chain/system/check
-      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-       (local.tee $7
-        (call $~lib/as-chain/mi/MultiIndex<tables/account.table/AccountsTable>#find
-         (i32.load
-          (local.tee $6
-           (i32.load offset=68
-            (local.get $0)
+      (block
+       (local.set $1
+        (i32.const 0)
+       )
+       (local.set $3
+        (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#getValue
+         (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#constructor
+          (local.tee $3
+           (i32.load
+            (i32.load
+             (i32.load offset=68
+              (local.get $0)
+             )
+            )
            )
           )
-         )
-         (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
-          (local.get $4)
+          (call $~lib/as-chain/env/db_lowerbound_i64
+           (i64.load
+            (local.get $3)
+           )
+           (i64.load offset=8
+            (local.get $3)
+           )
+           (i64.load offset=16
+            (local.get $3)
+           )
+           (i64.const 0)
+          )
+          (i64.const 0)
+          (i32.const 0)
          )
         )
        )
-      )
-      (i32.const 1872)
-     )
-     (local.set $6
-      (i32.load
-       (i32.load
-        (local.get $6)
+       (loop $while-continue|1
+        (if
+         (local.get $3)
+         (block
+          (local.set $4
+           (i32.add
+            (local.get $1)
+            (i32.const 1)
+           )
+          )
+          (local.set $7
+           (i64.load offset=16
+            (local.get $3)
+           )
+          )
+          (if
+           (i32.eqz
+            (local.get $5)
+           )
+           (unreachable)
+          )
+          (local.set $1
+           (select
+            (local.get $4)
+            (local.get $1)
+            (i64.ge_u
+             (local.get $7)
+             (i64.load offset=16
+              (local.get $5)
+             )
+            )
+           )
+          )
+          (call $~lib/as-chain/system/check
+           (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
+            (local.tee $8
+             (call $~lib/as-chain/mi/MultiIndex<tables/account.table/AccountsTable>#find
+              (i32.load
+               (local.tee $4
+                (i32.load offset=68
+                 (local.get $0)
+                )
+               )
+              )
+              (call $tables/moderatorCand.table/ModeratorCandTable#getPrimaryValue
+               (local.get $3)
+              )
+             )
+            )
+           )
+           (i32.const 1872)
+          )
+          (local.set $4
+           (i32.load
+            (i32.load
+             (local.get $4)
+            )
+           )
+          )
+          (local.set $3
+           (call $~lib/rt/stub/__alloc
+            (i32.const 8)
+           )
+          )
+          (local.set $3
+           (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#getValue
+            (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#constructor
+             (local.get $4)
+             (call $~lib/as-chain/env/db_next_i64
+              (i32.load offset=4
+               (local.get $8)
+              )
+              (local.get $3)
+             )
+             (i64.load
+              (local.get $3)
+             )
+             (i32.const 1)
+            )
+           )
+          )
+          (br $while-continue|1)
+         )
+        )
+       )
+       (call $~lib/as-chain/system/check
+        (i32.gt_s
+         (local.get $1)
+         (i32.const 0)
+        )
+        (i32.const 20368)
+       )
+       (if
+        (i64.lt_u
+         (i64.div_u
+          (i64.mul
+           (i64.add
+            (i64.load offset=32
+             (local.get $2)
+            )
+            (i64.load offset=40
+             (local.get $2)
+            )
+           )
+           (i64.const 100)
+          )
+          (i64.extend_i32_s
+           (local.get $1)
+          )
+         )
+         (i64.const 90)
+        )
+        (call $tables/elections.table/ElectionsTable#set:status
+         (local.get $2)
+         (i32.const 18704)
+        )
+        (if
+         (i64.gt_u
+          (i64.load offset=32
+           (local.get $2)
+          )
+          (i64.load offset=40
+           (local.get $2)
+          )
+         )
+         (call $tables/elections.table/ElectionsTable#set:status
+          (local.get $2)
+          (i32.const 20448)
+         )
+         (call $tables/elections.table/ElectionsTable#set:status
+          (local.get $2)
+          (i32.const 18704)
+         )
+        )
+       )
+       (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#update
+        (i32.load offset=56
+         (local.get $0)
+        )
+        (local.get $2)
+        (i32.load
+         (local.get $0)
+        )
+       )
+       (br_if $while-break|0
+        (i32.ge_s
+         (local.tee $6
+          (i32.add
+           (local.get $6)
+           (i32.const 1)
+          )
+         )
+         (i32.const 10)
+        )
        )
       )
      )
-     (local.set $4
+     (local.set $2
+      (call $~lib/as-chain/mi/MultiIndex<tables/proposals.table/ProposalsTable>#requireFind
+       (i32.load
+        (local.tee $1
+         (i32.load offset=56
+          (local.get $0)
+         )
+        )
+       )
+       (i64.load
+        (local.get $2)
+       )
+       (i32.const 1872)
+      )
+     )
+     (local.set $3
+      (i32.load
+       (i32.load
+        (local.get $1)
+       )
+      )
+     )
+     (local.set $1
       (call $~lib/rt/stub/__alloc
        (i32.const 8)
       )
      )
-     (local.set $4
-      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#getValue
-       (call $~lib/as-chain/dbi64/PrimaryIterator<tables/account.table/AccountsTable>#constructor
-        (local.get $6)
+     (local.set $2
+      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#getValue
+       (call $~lib/as-chain/dbi64/PrimaryIterator<tables/proposals.table/ProposalsTable>#constructor
+        (local.get $3)
         (call $~lib/as-chain/env/db_next_i64
          (i32.load offset=4
-          (local.get $7)
+          (local.get $2)
          )
-         (local.get $4)
+         (local.get $1)
         )
         (i64.load
-         (local.get $4)
+         (local.get $1)
         )
         (i32.const 1)
        )
@@ -23604,223 +23813,10 @@
   )
   (call $~lib/as-chain/system/check
    (i32.gt_s
-    (local.get $3)
+    (local.get $6)
     (i32.const 0)
    )
-   (i32.const 20320)
-  )
-  (local.set $5
-   (call $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#getValue
-    (call $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#constructor
-     (local.tee $5
-      (i32.load
-       (i32.load
-        (i32.load offset=60
-         (local.get $0)
-        )
-       )
-      )
-     )
-     (call $~lib/as-chain/env/db_lowerbound_i64
-      (i64.load
-       (local.get $5)
-      )
-      (i64.load offset=8
-       (local.get $5)
-      )
-      (i64.load offset=16
-       (local.get $5)
-      )
-      (i64.const 0)
-     )
-     (i64.const 0)
-     (i32.const 0)
-    )
-   )
-  )
-  (local.set $4
-   (i32.const 0)
-  )
-  (loop $while-continue|1
-   (if
-    (local.get $5)
-    (block
-     (local.set $4
-      (select
-       (i32.add
-        (local.get $4)
-        (i32.const 1)
-       )
-       (local.get $4)
-       (i64.eq
-        (local.get $1)
-        (i64.load offset=8
-         (local.get $5)
-        )
-       )
-      )
-     )
-     (call $~lib/as-chain/system/check
-      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/elections.table/ElectionsTable>#isOk
-       (local.tee $7
-        (call $~lib/as-chain/mi/MultiIndex<tables/propVoter.table/PropVotersTable>#find
-         (i32.load
-          (local.tee $6
-           (i32.load offset=60
-            (local.get $0)
-           )
-          )
-         )
-         (call $tables/modrecallvoter.table/ModRecallVotersTable#getPrimaryValue
-          (local.get $5)
-         )
-        )
-       )
-      )
-      (i32.const 1872)
-     )
-     (local.set $6
-      (i32.load
-       (i32.load
-        (local.get $6)
-       )
-      )
-     )
-     (local.set $5
-      (call $~lib/rt/stub/__alloc
-       (i32.const 8)
-      )
-     )
-     (local.set $5
-      (call $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#getValue
-       (call $~lib/as-chain/dbi64/PrimaryIterator<tables/propVoter.table/PropVotersTable>#constructor
-        (local.get $6)
-        (call $~lib/as-chain/env/db_next_i64
-         (i32.load offset=4
-          (local.get $7)
-         )
-         (local.get $5)
-        )
-        (i64.load
-         (local.get $5)
-        )
-        (i32.const 1)
-       )
-      )
-     )
-     (br $while-continue|1)
-    )
-   )
-  )
-  (if
-   (i32.lt_s
-    (i32.div_s
-     (i32.mul
-      (local.get $4)
-      (i32.const 100)
-     )
-     (local.get $3)
-    )
-    (i32.const 90)
-   )
-   (block
-    (if
-     (i32.eqz
-      (local.get $2)
-     )
-     (unreachable)
-    )
-    (call $tables/elections.table/ElectionsTable#set:status
-     (local.get $2)
-     (i32.const 18704)
-    )
-    (local.set $3
-     (i32.load offset=56
-      (local.get $0)
-     )
-    )
-    (if
-     (i32.eqz
-      (local.get $2)
-     )
-     (unreachable)
-    )
-    (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#update
-     (local.get $3)
-     (local.get $2)
-     (i32.load
-      (local.get $0)
-     )
-    )
-    (return)
-   )
-  )
-  (local.set $1
-   (i64.load offset=32
-    (local.tee $3
-     (if (result i32)
-      (local.get $2)
-      (local.get $2)
-      (unreachable)
-     )
-    )
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $2)
-   )
-   (unreachable)
-  )
-  (if
-   (i64.gt_u
-    (local.get $1)
-    (i64.load offset=40
-     (local.get $3)
-    )
-   )
-   (block
-    (if
-     (i32.eqz
-      (local.get $2)
-     )
-     (unreachable)
-    )
-    (call $tables/elections.table/ElectionsTable#set:status
-     (local.get $2)
-     (i32.const 20400)
-    )
-   )
-   (block
-    (if
-     (i32.eqz
-      (local.get $2)
-     )
-     (unreachable)
-    )
-    (call $tables/elections.table/ElectionsTable#set:status
-     (local.get $2)
-     (i32.const 18704)
-    )
-   )
-  )
-  (local.set $3
-   (i32.load offset=56
-    (local.get $0)
-   )
-  )
-  (if
-   (i32.eqz
-    (local.get $2)
-   )
-   (unreachable)
-  )
-  (call $~lib/proton-tsc/modules/store/store/TableStore<tables/proposals.table/ProposalsTable>#update
-   (local.get $3)
-   (local.get $2)
-   (i32.load
-    (local.get $0)
-   )
+   (i32.const 20480)
   )
  )
  (func $snipvote.contract/createElectionAction#unpack (param $0 i32) (param $1 i32) (result i32)
@@ -24391,14 +24387,9 @@
  )
  (func $snipvote.contract/closeProposalAction#unpack (param $0 i32) (param $1 i32) (result i32)
   (local $2 i32)
-  (call $~lib/as-chain/name/Name#set:N
-   (local.get $0)
-   (call $~lib/as-chain/serializer/Decoder#unpackNumber<u64>
-    (local.tee $2
-     (call $~lib/as-chain/serializer/Decoder#constructor
-      (local.get $1)
-     )
-    )
+  (local.set $2
+   (call $~lib/as-chain/serializer/Decoder#constructor
+    (local.get $1)
    )
   )
   (call $~lib/as-chain/name/Name#set:N
@@ -24418,7 +24409,7 @@
    (local.get $2)
    (local.get $1)
   )
-  (call $~lib/rt/common/OBJECT#set:gcInfo2
+  (call $~lib/rt/common/BLOCK#set:mmInfo
    (local.get $0)
    (local.get $1)
   )
@@ -25521,17 +25512,13 @@
       (drop
        (call $snipvote.contract/closeProposalAction#unpack
         (block (result i32)
-         (call $~lib/as-chain/name/Name#set:N
+         (call $~lib/rt/common/BLOCK#set:mmInfo
           (local.tee $3
            (call $~lib/rt/stub/__new
-            (i32.const 12)
+            (i32.const 4)
             (i32.const 130)
            )
           )
-          (i64.const 0)
-         )
-         (call $~lib/rt/common/OBJECT#set:gcInfo2
-          (local.get $3)
           (i32.const 0)
          )
          (local.get $3)
@@ -25539,15 +25526,10 @@
         (local.get $6)
        )
       )
-      (local.set $0
-       (i64.load
-        (local.get $3)
-       )
-      )
       (if
        (i32.eqz
         (local.tee $3
-         (i32.load offset=8
+         (i32.load
           (local.get $3)
          )
         )
@@ -25556,7 +25538,6 @@
       )
       (call $snipvote.contract/snipvoting#closeProposal
        (local.get $7)
-       (local.get $0)
        (local.get $3)
       )
      )
@@ -27272,26 +27253,21 @@
                         )
                         (if
                          (i32.eqz
-                          (i32.load offset=8
+                          (i32.load
                            (local.get $0)
                           )
                          )
                          (unreachable)
                         )
-                        (call $~lib/as-chain/serializer/Encoder#packNumber<u64>
-                         (local.tee $1
-                          (call $~lib/as-chain/serializer/Encoder#constructor
-                           (i32.const 16)
-                          )
-                         )
-                         (i64.load
-                          (local.get $0)
+                        (local.set $1
+                         (call $~lib/as-chain/serializer/Encoder#constructor
+                          (i32.const 8)
                          )
                         )
                         (if
                          (i32.eqz
                           (local.tee $0
-                           (i32.load offset=8
+                           (i32.load
                             (local.get $0)
                            )
                           )
@@ -27548,7 +27524,7 @@
        (local.get $2)
       )
      )
-     (i32.const 20432)
+     (i32.const 20592)
     )
     (local.set $4
      (call $~lib/array/Array<u64>#__get
@@ -27705,7 +27681,7 @@
        (local.get $2)
       )
      )
-     (i32.const 20496)
+     (i32.const 20656)
     )
     (local.set $4
      (call $~lib/array/Array<u64>#__get
@@ -27737,7 +27713,7 @@
  (func $~start
   (local $0 i32)
   (global.set $~lib/rt/stub/offset
-   (i32.const 20540)
+   (i32.const 20700)
   )
   (call $~lib/as-chain/name/Name#set:N
    (local.tee $0

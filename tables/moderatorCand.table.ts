@@ -8,7 +8,7 @@ export class ModeratorCandTable extends Table {
         public userName: string = "",  // this is snipverse account userName
         public approvedBy: u64 = 0, // total votes to accept
         public rejectedBy: u64 = 0, // total votes to reject
-        public status: string = "pending", // Status: pending, approved, rejected
+        public status: string = "pending", // Status: pending, approved, rejected, recalled
         public registrationTime: u64 = 0,
     ) {
         super()

@@ -629,10 +629,6 @@
       "base": "",
       "fields": [
         {
-          "name": "proposalId",
-          "type": "uint64"
-        },
-        {
           "name": "sender",
           "type": "name"
         }
