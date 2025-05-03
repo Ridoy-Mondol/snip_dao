@@ -246,6 +246,40 @@
       ]
     },
     {
+      "name": "ModReportsTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "postId",
+          "type": "string"
+        },
+        {
+          "name": "moderators",
+          "type": "name[]"
+        },
+        {
+          "name": "reportCount",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "reasons",
+          "type": "string[]"
+        },
+        {
+          "name": "categories",
+          "type": "string[]"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "ModeratorCandTable",
       "base": "",
       "fields": [
@@ -645,6 +679,11 @@
       "fields": []
     },
     {
+      "name": "clrmodreport",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "clrmodvoter",
       "base": "",
       "fields": []
@@ -840,6 +879,28 @@
       ]
     },
     {
+      "name": "reportpost",
+      "base": "",
+      "fields": [
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "postId",
+          "type": "string"
+        },
+        {
+          "name": "reason",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "submitprop",
       "base": "",
       "fields": [
@@ -989,6 +1050,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "clrmodreport",
+      "type": "clrmodreport",
+      "ricardian_contract": ""
+    },
+    {
       "name": "clrmodvoter",
       "type": "clrmodvoter",
       "ricardian_contract": ""
@@ -1036,6 +1102,11 @@
     {
       "name": "registercand",
       "type": "registercand",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "reportpost",
+      "type": "reportpost",
       "ricardian_contract": ""
     },
     {
@@ -1129,6 +1200,13 @@
     {
       "name": "modrecall",
       "type": "ModRecallTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "modreports",
+      "type": "ModReportsTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

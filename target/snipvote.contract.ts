@@ -1,6 +1,6 @@
 import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -34,6 +34,8 @@ export class snipvoting extends Contract {
   private propVotersTable: TableStore<PropVotersTable> = new TableStore<PropVotersTable>(this.receiver, this.receiver);
 
   private propConfigTable: TableStore<PropConfigTable> = new TableStore<PropConfigTable>(this.receiver, this.receiver);
+
+  private modReportsTable: TableStore<ModReportsTable> = new TableStore<ModReportsTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromU64(0xC4DD5C6600000000));
 
@@ -160,7 +162,6 @@ export class snipvoting extends Contract {
     }
   }
 
-
   @action("clrmodvoter")
   clrModVoter(): void {
     let cursor8 = this.moderatorVotersTable.first();
@@ -171,13 +172,22 @@ export class snipvoting extends Contract {
     }
   }
 
-
   @action("clrmodrecall")
   clrModRecall(): void {
     let cursor9 = this.modRecallTable.first();
     while (cursor9 !== null) {
         let nextCursor = this.modRecallTable.next(cursor9);
         this.modRecallTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+  @action("clrmodreport")
+  clrModReport(): void {
+    let cursor9 = this.modReportsTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.modReportsTable.next(cursor9);
+        this.modReportsTable.remove(cursor9);
         cursor9 = nextCursor;
     }
   }
@@ -650,8 +660,9 @@ export class snipvoting extends Contract {
 
      check(isValidVoter === true, "Only council members can vote");
 
-     let voterExist = this.moderatorVotersTable.get(voter.N + candidate.N);
+     let voterExist = this.moderatorVotersTable.get((voter.N << 32) | (candidate.N & 0xFFFFFFFF));
      check(voterExist === null, "You have already voted for this candidate");
+
    
      let candidateData = this.moderatorCandTable.get(candidate.N);
      check(candidateData !== null, "Candidate not found");
@@ -968,6 +979,49 @@ export class snipvoting extends Contract {
     check(processedCount > 0, "No proposals were closed. Try again later.");
   }
 
+  // action to moderator reports on post
+  @action("reportpost")
+  reportPost( moderator: Name, postId: string, reason: string, category: string): void {
+    requireAuth(moderator);
+
+    let correctMod = this.moderatorsTable.get(moderator.N);
+    check (correctMod !== null, "Only Moderators can Report");
+  
+    let report = this.modReportsTable.get(stringToU64(postId));
+
+    const now = currentTimeSec();
+
+    if (report === null) {
+      const newReport = new ModReportsTable(
+        postId,
+        [moderator],
+        1,
+        "pending",
+        [reason],
+        [category],
+        now
+      );
+      this.modReportsTable.store(newReport, this.receiver);
+    } else {
+      for (let i = 0; i < report.moderators.length; i++) {
+        check(report.moderators[i].N != moderator.N, "Moderator has already reported this post");
+      }
+ 
+      report.moderators.push(moderator);
+      report.reasons.push(reason);
+      report.categories.push(category);
+      report.reportCount += 1;
+      report.timestamp = now;
+
+      if (report.reportCount >= 3 && stringToU64(report.status) == stringToU64("pending")) {
+        report.status = "hidden";
+      }
+
+      this.modReportsTable.update(report, this.receiver);
+    }
+  }
+
+
 
 
 
@@ -1128,6 +1182,27 @@ class clrModVoterAction implements _chain.Packer {
 }
 
 class clrModRecallAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clrModReportAction implements _chain.Packer {
     constructor (
     ) {
     }
@@ -1735,6 +1810,48 @@ class closeProposalAction implements _chain.Packer {
     }
 }
 
+class reportPostAction implements _chain.Packer {
+    constructor (
+        public moderator: _chain.Name | null = null,
+        public postId: string = "",
+        public reason: string = "",
+        public category: string = "",
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.moderator!);
+        enc.packString(this.postId);
+        enc.packString(this.reason);
+        enc.packString(this.category);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.moderator! = obj;
+        }
+        this.postId = dec.unpackString();
+        this.reason = dec.unpackString();
+        this.category = dec.unpackString();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.moderator!.getSize();
+        size += _chain.Utils.calcPackedStringLength(this.postId);
+        size += _chain.Utils.calcPackedStringLength(this.reason);
+        size += _chain.Utils.calcPackedStringLength(this.category);
+        return size;
+    }
+}
+
 export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 	const _receiver = new _chain.Name(receiver);
 	const _firstReceiver = new _chain.Name(firstReceiver);
@@ -1778,6 +1895,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new clrModRecallAction();
             args.unpack(actionData);
             mycontract.clrModRecall();
+        }
+		if (action == 0x446F2A26EAAD2F90) {//clrmodreport
+            const args = new clrModReportAction();
+            args.unpack(actionData);
+            mycontract.clrModReport();
         }
 		if (action == 0xBA98EC655741A690) {//registercand
             const args = new registerCandidateAction();
@@ -1853,6 +1975,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new closeProposalAction();
             args.unpack(actionData);
             mycontract.closeProposal(args.sender!);
+        }
+		if (action == 0xBAAB4BE6B4C64000) {//reportpost
+            const args = new reportPostAction();
+            args.unpack(actionData);
+            mycontract.reportPost(args.moderator!,args.postId,args.reason,args.category);
         }
 	}
   

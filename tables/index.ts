@@ -17,3 +17,4 @@ export * from './modrecallvoter.table';
 export * from './proposals.table';
 export * from './propVoter.table';
 export * from './propConfig.table';
+export * from './modReports.table';

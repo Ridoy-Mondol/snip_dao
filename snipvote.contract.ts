@@ -1,5 +1,5 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -33,6 +33,8 @@ export class snipvoting extends Contract {
   private propVotersTable: TableStore<PropVotersTable> = new TableStore<PropVotersTable>(this.receiver, this.receiver);
 
   private propConfigTable: TableStore<PropConfigTable> = new TableStore<PropConfigTable>(this.receiver, this.receiver);
+
+  private modReportsTable: TableStore<ModReportsTable> = new TableStore<ModReportsTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -159,7 +161,6 @@ export class snipvoting extends Contract {
     }
   }
 
-
   @action("clrmodvoter")
   clrModVoter(): void {
     let cursor8 = this.moderatorVotersTable.first();
@@ -170,13 +171,22 @@ export class snipvoting extends Contract {
     }
   }
 
-
   @action("clrmodrecall")
   clrModRecall(): void {
     let cursor9 = this.modRecallTable.first();
     while (cursor9 !== null) {
         let nextCursor = this.modRecallTable.next(cursor9);
         this.modRecallTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+  @action("clrmodreport")
+  clrModReport(): void {
+    let cursor9 = this.modReportsTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.modReportsTable.next(cursor9);
+        this.modReportsTable.remove(cursor9);
         cursor9 = nextCursor;
     }
   }
@@ -649,8 +659,9 @@ export class snipvoting extends Contract {
 
      check(isValidVoter === true, "Only council members can vote");
 
-     let voterExist = this.moderatorVotersTable.get(voter.N + candidate.N);
+     let voterExist = this.moderatorVotersTable.get((voter.N << 32) | (candidate.N & 0xFFFFFFFF));
      check(voterExist === null, "You have already voted for this candidate");
+
    
      let candidateData = this.moderatorCandTable.get(candidate.N);
      check(candidateData !== null, "Candidate not found");
@@ -966,6 +977,49 @@ export class snipvoting extends Contract {
 
     check(processedCount > 0, "No proposals were closed. Try again later.");
   }
+
+  // action to moderator reports on post
+  @action("reportpost")
+  reportPost( moderator: Name, postId: string, reason: string, category: string): void {
+    requireAuth(moderator);
+
+    let correctMod = this.moderatorsTable.get(moderator.N);
+    check (correctMod !== null, "Only Moderators can Report");
+  
+    let report = this.modReportsTable.get(stringToU64(postId));
+
+    const now = currentTimeSec();
+
+    if (report === null) {
+      const newReport = new ModReportsTable(
+        postId,
+        [moderator],
+        1,
+        "pending",
+        [reason],
+        [category],
+        now
+      );
+      this.modReportsTable.store(newReport, this.receiver);
+    } else {
+      for (let i = 0; i < report.moderators.length; i++) {
+        check(report.moderators[i].N != moderator.N, "Moderator has already reported this post");
+      }
+ 
+      report.moderators.push(moderator);
+      report.reasons.push(reason);
+      report.categories.push(category);
+      report.reportCount += 1;
+      report.timestamp = now;
+
+      if (report.reportCount >= 3 && stringToU64(report.status) == stringToU64("pending")) {
+        report.status = "hidden";
+      }
+
+      this.modReportsTable.update(report, this.receiver);
+    }
+  }
+
 
 
 
