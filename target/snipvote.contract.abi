@@ -500,6 +500,54 @@
       ]
     },
     {
+      "name": "ReportVotersTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "postId",
+          "type": "string"
+        },
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "decision",
+          "type": "string"
+        },
+        {
+          "name": "votedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ReportVotesTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "postId",
+          "type": "string"
+        },
+        {
+          "name": "deletionVotes",
+          "type": "uint64"
+        },
+        {
+          "name": "restorationVotes",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "StakesTable",
       "base": "",
       "fields": [
@@ -901,6 +949,24 @@
       ]
     },
     {
+      "name": "reportvote",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "postId",
+          "type": "string"
+        },
+        {
+          "name": "decision",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "submitprop",
       "base": "",
       "fields": [
@@ -1110,6 +1176,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "reportvote",
+      "type": "reportvote",
+      "ricardian_contract": ""
+    },
+    {
       "name": "submitprop",
       "type": "submitprop",
       "ricardian_contract": ""
@@ -1256,6 +1327,20 @@
     {
       "name": "recallvotes",
       "type": "RecallVotesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "reportvoters",
+      "type": "ReportVotersTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "reportvotes",
+      "type": "ReportVotesTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

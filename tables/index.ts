@@ -18,3 +18,5 @@ export * from './proposals.table';
 export * from './propVoter.table';
 export * from './propConfig.table';
 export * from './modReports.table';
+export * from './reportVotes.table';
+export * from './reportVoters.table';

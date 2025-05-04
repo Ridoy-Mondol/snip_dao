@@ -8,7 +8,7 @@ export class ModReportsTable extends Table {
         public postId: string = '',
         public moderators: Name[] = [],
         public reportCount: u64 = 0,
-        public status: string = "pending", // "pending", "hidden", "deleted" etc.
+        public status: string = "pending", // "pending", "hidden", "deleted", "restored" etc.
         public reasons: string[] = [],
         public categories: string[] = [],  // e.g., "spam", "abuse", "violence", etc.
         public timestamp: u64 = 0

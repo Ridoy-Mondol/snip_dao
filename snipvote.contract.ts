@@ -1,5 +1,5 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -35,6 +35,10 @@ export class snipvoting extends Contract {
   private propConfigTable: TableStore<PropConfigTable> = new TableStore<PropConfigTable>(this.receiver, this.receiver);
 
   private modReportsTable: TableStore<ModReportsTable> = new TableStore<ModReportsTable>(this.receiver, this.receiver);
+
+  private reportVotesTable: TableStore<ReportVotesTable> = new TableStore<ReportVotesTable>(this.receiver, this.receiver);
+
+  private reportVotersTable: TableStore<ReportVotersTable> = new TableStore<ReportVotersTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -1016,9 +1020,84 @@ export class snipvoting extends Contract {
         report.status = "hidden";
       }
 
+      if (report.reportCount >= 3) {
+        let vote = this.reportVotesTable.get(stringToU64(postId));
+        if (vote === null) {
+          let newVote = new ReportVotesTable (
+            postId,
+            0,
+            0,
+            'voting',
+            now
+          )
+          this.reportVotesTable.store(newVote, this.receiver);
+        }
+      }
+
       this.modReportsTable.update(report, this.receiver);
     }
   }
+
+  // action to vote on report to permanently delete or restore post
+  @action("reportvote")
+  reportVote(voter: Name, postId: string, decision: string): void {
+    requireAuth(voter);
+
+    const now = currentTimeSec();
+
+    let winnerCursor = this.winnersTable.first();
+    let isValidVoter = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isValidVoter = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+
+    check(isValidVoter === true, "Only council members can vote");
+
+    const voterKey = stringToU64(postId) + voter.N;
+    const existingVote = this.reportVotersTable.get(voterKey);
+    check(existingVote === null, "You have already voted on this post");
+
+    check(stringToU64(decision) === stringToU64("delete") || stringToU64(decision) === stringToU64("restore"), "Decision must be 'delete' or 'restore'");
+
+    let vote = this.reportVotesTable.get(stringToU64(postId));
+    check(vote !== null, "No vote session found for this post");
+
+    let report = this.modReportsTable.get(stringToU64(postId));
+    check(report !== null, "No report found for this post");
+
+    if (vote) {
+      if (stringToU64(decision) === stringToU64("delete")) {
+        vote.deletionVotes += 1;
+      } else {
+        vote.restorationVotes += 1;
+      }
+
+      if (vote.deletionVotes >= 4) {
+        vote.status = "deleted";
+        report!.status = "deleted"; 
+      } else if (vote.restorationVotes >= 4) {
+        vote.status = "restored";
+        report!.status = "restored";
+      }
+
+      this.reportVotesTable.update(vote, this.receiver);
+
+      this.modReportsTable.update(report!, this.receiver);
+    }
+
+    const voterData = new ReportVotersTable(
+      postId,
+      voter,
+      decision,
+      now
+    );
+    this.reportVotersTable.store(voterData, this.receiver);
+  }
+
 
 
 
