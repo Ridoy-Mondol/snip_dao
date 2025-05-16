@@ -20,3 +20,6 @@ export * from './propConfig.table';
 export * from './modReports.table';
 export * from './reportVotes.table';
 export * from './reportVoters.table';
+export * from './fundProp.table';
+export * from './fundVotes.table';
+export * from './fundConfig.table';

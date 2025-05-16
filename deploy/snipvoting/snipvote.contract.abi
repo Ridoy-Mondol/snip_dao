@@ -172,6 +172,100 @@
       ]
     },
     {
+      "name": "FundConfigTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint8"
+        },
+        {
+          "name": "communityWallet",
+          "type": "name"
+        },
+        {
+          "name": "tokenContract",
+          "type": "name"
+        },
+        {
+          "name": "maxSharePercent",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "name": "FundProposalTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "proposer",
+          "type": "name"
+        },
+        {
+          "name": "recipient",
+          "type": "name"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "name": "approvedBy",
+          "type": "uint8"
+        },
+        {
+          "name": "rejectedBy",
+          "type": "uint8"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "createdAt",
+          "type": "uint64"
+        },
+        {
+          "name": "approvedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "FundVoteTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
+          "type": "string"
+        },
+        {
+          "name": "votedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "LockingPeriod",
       "base": "",
       "fields": [
@@ -717,6 +811,16 @@
       ]
     },
     {
+      "name": "clrfundprop",
+      "base": "",
+      "fields": []
+    },
+    {
+      "name": "clrfundvote",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "clrmodcand",
       "base": "",
       "fields": []
@@ -767,6 +871,36 @@
         {
           "name": "voterStakeAmount",
           "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "createfprop",
+      "base": "",
+      "fields": [
+        {
+          "name": "proposer",
+          "type": "name"
+        },
+        {
+          "name": "recipient",
+          "type": "name"
+        },
+        {
+          "name": "amount",
+          "type": "uint64"
+        },
+        {
+          "name": "available",
+          "type": "uint64"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": "string"
         }
       ]
     },
@@ -967,6 +1101,24 @@
       ]
     },
     {
+      "name": "setfstatus",
+      "base": "",
+      "fields": [
+        {
+          "name": "actor",
+          "type": "name"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "newStatus",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "submitprop",
       "base": "",
       "fields": [
@@ -1015,6 +1167,28 @@
       ]
     },
     {
+      "name": "updtfundcfg",
+      "base": "",
+      "fields": [
+        {
+          "name": "admin",
+          "type": "name"
+        },
+        {
+          "name": "communityWallet",
+          "type": "name"
+        },
+        {
+          "name": "maxSharePercent",
+          "type": "uint8"
+        },
+        {
+          "name": "tokenContract",
+          "type": "name"
+        }
+      ]
+    },
+    {
       "name": "vote",
       "base": "",
       "fields": [
@@ -1032,6 +1206,24 @@
         },
         {
           "name": "electionName",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "votefprop",
+      "base": "",
+      "fields": [
+        {
+          "name": "voter",
+          "type": "name"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint64"
+        },
+        {
+          "name": "vote",
           "type": "string"
         }
       ]
@@ -1106,6 +1298,16 @@
       "ricardian_contract": ""
     },
     {
+      "name": "clrfundprop",
+      "type": "clrfundprop",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clrfundvote",
+      "type": "clrfundvote",
+      "ricardian_contract": ""
+    },
+    {
       "name": "clrmodcand",
       "type": "clrmodcand",
       "ricardian_contract": ""
@@ -1128,6 +1330,11 @@
     {
       "name": "createelect",
       "type": "createelect",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "createfprop",
+      "type": "createfprop",
       "ricardian_contract": ""
     },
     {
@@ -1181,6 +1388,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "setfstatus",
+      "type": "setfstatus",
+      "ricardian_contract": ""
+    },
+    {
       "name": "submitprop",
       "type": "submitprop",
       "ricardian_contract": ""
@@ -1191,8 +1403,18 @@
       "ricardian_contract": ""
     },
     {
+      "name": "updtfundcfg",
+      "type": "updtfundcfg",
+      "ricardian_contract": ""
+    },
+    {
       "name": "vote",
       "type": "vote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "votefprop",
+      "type": "votefprop",
       "ricardian_contract": ""
     },
     {
@@ -1250,6 +1472,27 @@
     {
       "name": "elections",
       "type": "ElectionsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "fundconfig",
+      "type": "FundConfigTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "fundprops",
+      "type": "FundProposalTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "fundvotes",
+      "type": "FundVoteTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

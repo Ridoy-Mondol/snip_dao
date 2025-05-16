@@ -1,7 +1,20 @@
-import { Name, TableStore, requireAuth, check, Contract, currentTimeSec } from "proton-tsc";
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable } from "./tables";
+import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
+
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
+
+@packer
+export class TokenTransfer extends ActionData {
+  constructor(
+    public from: Name = new Name(),
+    public to: Name = new Name(),
+    public quantity: Asset = new Asset(),
+    public memo: string = "",
+  ) {
+    super();
+  }
+}
 
 @contract
 export class snipvoting extends Contract {
@@ -39,6 +52,12 @@ export class snipvoting extends Contract {
   private reportVotesTable: TableStore<ReportVotesTable> = new TableStore<ReportVotesTable>(this.receiver, this.receiver);
 
   private reportVotersTable: TableStore<ReportVotersTable> = new TableStore<ReportVotersTable>(this.receiver, this.receiver);
+  
+  private fundConfigTable: TableStore<FundConfigTable> = new TableStore<FundConfigTable>(this.receiver, this.receiver);
+
+  private fundPropTable: TableStore<FundProposalTable> = new TableStore<FundProposalTable>(this.receiver, this.receiver);
+
+  private fundVoteTable: TableStore<FundVoteTable> = new TableStore<FundVoteTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -191,6 +210,26 @@ export class snipvoting extends Contract {
     while (cursor9 !== null) {
         let nextCursor = this.modReportsTable.next(cursor9);
         this.modReportsTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+  @action("clrfundprop")
+  clrFundProp(): void {
+    let cursor9 = this.fundPropTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.fundPropTable.next(cursor9);
+        this.fundPropTable.remove(cursor9);
+        cursor9 = nextCursor;
+    }
+  }
+
+  @action("clrfundvote")
+  clrFundVote(): void {
+    let cursor9 = this.fundVoteTable.first();
+    while (cursor9 !== null) {
+        let nextCursor = this.fundVoteTable.next(cursor9);
+        this.fundVoteTable.remove(cursor9);
         cursor9 = nextCursor;
     }
   }
@@ -1097,6 +1136,237 @@ export class snipvoting extends Contract {
     );
     this.reportVotersTable.store(voterData, this.receiver);
   }
+  
+  // fund transfer configuration
+  @action("updtfundcfg")
+  updateFundConfig(
+    admin: Name,
+    communityWallet: Name,
+    maxSharePercent: u8,
+    tokenContract: Name
+  ): void {
+    requireAuth(admin);
+
+    let isCouncil = false;
+    let cursor = this.winnersTable.first();
+    while (cursor !== null) {
+      if (
+        cursor.winner.N == admin.N &&
+        stringToU64(cursor.status) == stringToU64("active")
+      ) {
+        isCouncil = true;
+        break;
+      }
+      cursor = this.winnersTable.next(cursor);
+    }
+    check(isCouncil, "Only council members can update configuration");
+
+    check(maxSharePercent > 0 && maxSharePercent <= 100, "Percentage must be between 1 and 100");
+
+    const existing = this.fundConfigTable.get(0);
+    if (existing !== null) {
+      existing.communityWallet = communityWallet;
+      existing.maxSharePercent = maxSharePercent;
+      existing.tokenContract = tokenContract;
+      this.fundConfigTable.update(existing, this.receiver);
+    } else {
+      const newConfig = new FundConfigTable(0, communityWallet, tokenContract, maxSharePercent);
+      this.fundConfigTable.store(newConfig, this.receiver);
+    }
+  }
+
+  // proposal for fund transfer
+  @action("createfprop")
+  createFundProposal(
+    proposer: Name,
+    recipient: Name,
+    amount: u64,
+    available: u64,
+    memo: string,
+    category: string,
+  ): void {
+    requireAuth(proposer);
+
+    let isCouncil = false;
+    let cursor = this.winnersTable.first();
+    while (cursor !== null) {
+      if (
+        cursor.winner.N == proposer.N &&
+        stringToU64(cursor.status) == stringToU64("active")
+      ) {
+        isCouncil = true;
+        break;
+      }
+      cursor = this.winnersTable.next(cursor);
+    }
+    check(isCouncil, "Only council members can propose");
+
+    check(isAccount(recipient), "Recipient account does not exist");
+
+    const fundConfig = this.fundConfigTable.get(0);
+    check(fundConfig !== null, "Fund configuration not found");
+
+    check(isAccount(fundConfig!.communityWallet), "Community Wallet account does not exist");
+
+    const maxSharePercent = fundConfig!.maxSharePercent;
+
+    check(available > 0, "No available balance in Community Wallet");
+    check(amount > 0, "Amount must be greater than 0");
+
+    const allowedAmount = (available * maxSharePercent) / 100;
+    check(amount <= allowedAmount, `Maximum ${maxSharePercent}% of total amount can be send per proposal`);
+
+    const newId = this.fundPropTable.availablePrimaryKey;
+    const now = currentTimeSec();
+
+    const proposal = new FundProposalTable(
+      newId,
+      proposer,
+      recipient,
+      amount,
+      memo,
+      category,
+      0, 
+      0, 
+      "open",
+      now,
+      0
+    );
+
+    this.fundPropTable.store(proposal, this.receiver);
+  }
+
+  @action("votefprop")
+  voteFundProposal(voter: Name, proposalId: u64, vote: string): void {
+    requireAuth(voter);
+
+    const now = currentTimeSec();
+
+    let isCouncil = false;
+    let winnerCursor = this.winnersTable.first();
+    while (winnerCursor !== null) {
+      if (
+        winnerCursor.winner.N === voter.N &&
+        stringToU64(winnerCursor.status) === stringToU64("active")
+      ) {
+        isCouncil = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+    check(isCouncil, "Only council members can vote on fund proposals");
+
+    check(
+    stringToU64(vote) === stringToU64("approve") || stringToU64(vote) === stringToU64("reject"),
+    "Vote must be 'approve' or 'reject'"
+    );
+
+    const proposal = this.fundPropTable.get(proposalId);
+    check(proposal !== null, "Fund proposal not found");
+    check(stringToU64(proposal!.status) === stringToU64("open"), "Voting closed for this proposal");
+
+    const voteKey = voter.N + proposalId;
+    const existingVote = this.fundVoteTable.get(voteKey);
+    check(existingVote === null, "You have already voted on this proposal");
+
+    if (stringToU64(vote) === stringToU64("approve")) {
+      proposal!.approvedBy += 1;
+    } else {
+      proposal!.rejectedBy += 1;
+    }
+
+    if (proposal!.approvedBy >= 3) {
+      proposal!.status = "approved";
+      proposal!.approvedAt = now;
+
+      const config = this.fundConfigTable.get(0);
+      check(config !== null, "Fund configuration not found");
+
+      const amountInt: u64 = proposal!.amount;
+      const integerPart = amountInt / 10000;
+      const decimalPart = amountInt % 10000;
+      const decimalPartStr = decimalPart.toString().padStart(4, '0');
+      const quantityStr = integerPart.toString() + "." + decimalPartStr + " SNIPX";
+      const quantity = Asset.fromString(quantityStr);
+
+      const transfer = new InlineAction<TokenTransfer>("transfer");
+      const action = transfer.act(
+        config!.tokenContract, 
+        new PermissionLevel(Name.fromString(config!.communityWallet.toString()), Name.fromString("fund"))
+      );
+
+      const params = new TokenTransfer(
+        config!.communityWallet,
+        proposal!.recipient,
+        quantity,
+        proposal!.memo,
+      );
+
+      action.send(params);
+      
+    } else if (proposal!.rejectedBy >= 3) {
+      proposal!.status = "rejected";
+    }
+
+    this.fundPropTable.update(proposal!, this.receiver);
+
+    const voteRecord = new FundVoteTable(
+      voter,
+      proposalId,
+      vote,
+      now
+    );
+    this.fundVoteTable.store(voteRecord, this.receiver);
+  }
+
+  @action("setfstatus")
+  setFundStatus(
+    actor: Name,
+    proposalId: u64,
+    newStatus: string
+  ): void {
+    requireAuth(actor);
+
+    let isCouncil = false;
+    let cursor = this.winnersTable.first();
+    while (cursor !== null) {
+      if (
+        cursor.winner.N == actor.N &&
+        stringToU64(cursor.status) == stringToU64("active")
+      ) {
+        isCouncil = true;
+        break;
+      }
+      cursor = this.winnersTable.next(cursor);
+    }
+    check(isCouncil, "Only council members can pause or resume fund distribution");
+
+    check(
+      stringToU64(newStatus) == stringToU64("paused") || stringToU64(newStatus) == stringToU64("open"),
+      "Status must be either 'paused' or 'open'"
+    );
+
+    const proposal = this.fundPropTable.get(proposalId);
+    check(proposal !== null, "Proposal not found");
+
+    check(
+      stringToU64(proposal!.status) != stringToU64("approved") && stringToU64(proposal!.status) != stringToU64("rejected"),
+      "Cannot pause or resume fund distribution of an approved or rejected proposal"
+    );
+
+    proposal!.status = newStatus;
+    this.fundPropTable.update(proposal!, this.receiver);
+  }
+
+
+
+
+
+  
+
+ 
+
+
 
 
 
