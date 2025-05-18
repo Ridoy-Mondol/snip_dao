@@ -1,8 +1,9 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
+import {getYearFromTimestamp, getMonthFromTimestamp} from './utils/date';
 
 @packer
 export class TokenTransfer extends ActionData {
@@ -60,6 +61,10 @@ export class snipvoting extends Contract {
   private fundVoteTable: TableStore<FundVoteTable> = new TableStore<FundVoteTable>(this.receiver, this.receiver);
 
   private revenueTable: TableStore<RevenueRecordTable> = new TableStore<RevenueRecordTable>(this.receiver, this.receiver);
+
+  private memberPerfTable: TableStore<MemberPerformanceTable> = new TableStore<MemberPerformanceTable>(this.receiver, this.receiver);
+
+  private moderatorPerfTable: TableStore<ModeratorPerformanceTable> = new TableStore<ModeratorPerformanceTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -748,6 +753,9 @@ export class snipvoting extends Contract {
 
       this.moderatorCandTable.update(candidateData, this.receiver);
      }
+
+     this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action to initiate moderator recall
@@ -862,6 +870,8 @@ export class snipvoting extends Contract {
 
     this.modRecallTable.update(recall!, this.receiver);
 
+    this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action to update staking requirement for proposal
@@ -915,6 +925,25 @@ export class snipvoting extends Contract {
     );
 
     this.proposalsTable.store(newProposal, this.receiver);
+
+    let winnerCursor = this.winnersTable.first();
+    let isMember = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === proposer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isMember = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+    if (isMember) {
+      this.updatePerformance(proposer, 1, 0, 0, 0);
+    }
+
+    const isModerator = this.moderatorsTable.get(proposer.N);
+    if (isModerator) {
+      this.updateModeratorPerformance( proposer, 0, 1, 0 );
+    }
+
   }
   
   // action to vote on proposal
@@ -956,9 +985,29 @@ export class snipvoting extends Contract {
     );
 
     this.propVotersTable.store(newVoter, this.receiver);
+
+    let winnerCursor = this.winnersTable.first();
+    let isMember = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isMember = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+
+    if (isMember) {
+      this.updatePerformance(voter, 0, 0, 1, 0);
+    }
+
+    const isModerator = this.moderatorsTable.get(voter.N);
+    if (isModerator) {
+      this.updateModeratorPerformance( voter, 0, 0, 1 );
+    }
+
   }
   
-  // action to decle proposal result after deadline passed
+  // action to declare proposal result after deadline passed
   @action("closeprop")
   closeProposal(sender: Name): void {
     requireAuth(sender);
@@ -1077,6 +1126,9 @@ export class snipvoting extends Contract {
 
       this.modReportsTable.update(report, this.receiver);
     }
+
+    this.updateModeratorPerformance( moderator, 1, 0, 0 );
+
   }
 
   // action to vote on report to permanently delete or restore post
@@ -1137,6 +1189,8 @@ export class snipvoting extends Contract {
       now
     );
     this.reportVotersTable.store(voterData, this.receiver);
+
+    this.updatePerformance(voter, 0, 0, 1, 0);
   }
   
   // fund transfer configuration
@@ -1236,6 +1290,9 @@ export class snipvoting extends Contract {
     );
 
     this.fundPropTable.store(proposal, this.receiver);
+
+    this.updatePerformance(proposer, 0, 1, 0, 0);
+
   }
   
   // action for vote on fund transfer proposal and transfer fund
@@ -1320,6 +1377,9 @@ export class snipvoting extends Contract {
       now
     );
     this.fundVoteTable.store(voteRecord, this.receiver);
+
+    this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action for pause and resume fund distribution
@@ -1411,7 +1471,7 @@ export class snipvoting extends Contract {
 
     // --- calculate share ---
     const amountToDistribute = totalRevenue / 100 * percent;
-    const amountPerMember = amountToDistribute / u64(5);
+    const amountPerMember = amountToDistribute / u64(elected.length);
 
     check(amountPerMember > 0, "Calculated share is too small to distribute");
     check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
@@ -1443,6 +1503,8 @@ export class snipvoting extends Contract {
       );
 
       action.send(transferParams);
+
+      this.updatePerformance(recipient, 0, 0, 0, u64(amountPerMember));
     }
 
     // --- Store revenue record ---
@@ -1458,6 +1520,101 @@ export class snipvoting extends Contract {
     );
     this.revenueTable.store(record, founder);
   }
+
+  // action to track member performance
+  @action("updateperf")
+  updatePerformance(
+    member: Name,
+    addProposals: u64 = 0,
+    addTokenAllocProposals: u64 = 0,
+    addVotes: u64 = 0,
+    addRevenueShare: u64 = 0
+  ): void {
+
+    let currentTime = currentTimeSec(); 
+    let currentYear: u16 = getYearFromTimestamp(currentTime);
+    let currentMonth: u8 = getMonthFromTimestamp(currentTime);
+
+    let recordKey = (u64(member.N) << 32) | (u64(currentYear) << 8) | u64(currentMonth);
+    let perfRecord = this.memberPerfTable.get(recordKey);
+
+    // Calculate the performance impact
+    let performanceIncrement: u64 = (
+      addProposals * 10 +
+      addTokenAllocProposals * 15 +
+      addVotes * 5 +
+      (addRevenueShare / 10_000_000) // 1 point per 1000 token shared
+    );
+
+    if (perfRecord === null) {
+      // No record yet this month — create new
+      perfRecord = new MemberPerformanceTable(
+        member,
+        currentYear,
+        currentMonth,
+        addProposals,
+        addTokenAllocProposals,
+        addVotes,
+        addRevenueShare,
+        performanceIncrement
+      );
+      this.memberPerfTable.store(perfRecord, this.receiver);
+    } else {
+      // Update existing record by incrementing counts
+      perfRecord.proposalCount += addProposals;
+      perfRecord.tokenAllocProposalCount +=   addTokenAllocProposals;
+      perfRecord.votesCast += addVotes;
+      perfRecord.revenueShare += addRevenueShare;
+      perfRecord.performanceScore += performanceIncrement;
+      this.memberPerfTable.update(perfRecord, this.receiver);
+    }
+  }
+
+  // action to track moderator performance
+  @action("updtmodperf")
+  updateModeratorPerformance(
+    moderator: Name,
+    addReports: u64 = 0,
+    addProposals: u64 = 0,
+    addVotes: u64 = 0
+  ): void {
+    requireAuth(moderator);
+
+    let currentTime = currentTimeSec(); 
+    let currentYear: u16 = getYearFromTimestamp(currentTime);
+    let currentMonth: u8 = getMonthFromTimestamp(currentTime);
+
+    let recordKey = (u64(moderator.N) << 32) | (u64(currentYear) << 8) | u64(currentMonth);
+    let modPerfRecord = this.moderatorPerfTable.get(recordKey);
+
+    // Scoring logic
+    let performanceIncrement: u64 = (
+      addReports * 5 +
+      addProposals * 10 +
+      addVotes * 5
+    );
+
+    if (modPerfRecord === null) {
+      modPerfRecord = new ModeratorPerformanceTable(
+        moderator,
+        currentYear,
+        currentMonth,
+        addReports,
+        addProposals,
+        addVotes,
+        performanceIncrement
+      );
+      this.moderatorPerfTable.store(modPerfRecord, this.receiver);
+    } else {
+      modPerfRecord.reportCount += addReports;
+      modPerfRecord.proposalCount += addProposals;
+      modPerfRecord.votesCast += addVotes;
+      modPerfRecord.performanceScore += performanceIncrement;
+      this.moderatorPerfTable.update(modPerfRecord, this.receiver);
+    }
+  }
+
+
 
 
 

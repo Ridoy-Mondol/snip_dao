@@ -1,9 +1,10 @@
 import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
+import {getYearFromTimestamp, getMonthFromTimestamp} from './utils/date';
 
 
 @packer(nocodegen)
@@ -104,6 +105,10 @@ export class snipvoting extends Contract {
   private fundVoteTable: TableStore<FundVoteTable> = new TableStore<FundVoteTable>(this.receiver, this.receiver);
 
   private revenueTable: TableStore<RevenueRecordTable> = new TableStore<RevenueRecordTable>(this.receiver, this.receiver);
+
+  private memberPerfTable: TableStore<MemberPerformanceTable> = new TableStore<MemberPerformanceTable>(this.receiver, this.receiver);
+
+  private moderatorPerfTable: TableStore<ModeratorPerformanceTable> = new TableStore<ModeratorPerformanceTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromU64(0xC4DD5C6600000000));
 
@@ -792,6 +797,9 @@ export class snipvoting extends Contract {
 
       this.moderatorCandTable.update(candidateData, this.receiver);
      }
+
+     this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action to initiate moderator recall
@@ -906,6 +914,8 @@ export class snipvoting extends Contract {
 
     this.modRecallTable.update(recall!, this.receiver);
 
+    this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action to update staking requirement for proposal
@@ -959,6 +969,25 @@ export class snipvoting extends Contract {
     );
 
     this.proposalsTable.store(newProposal, this.receiver);
+
+    let winnerCursor = this.winnersTable.first();
+    let isMember = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === proposer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isMember = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+    if (isMember) {
+      this.updatePerformance(proposer, 1, 0, 0, 0);
+    }
+
+    const isModerator = this.moderatorsTable.get(proposer.N);
+    if (isModerator) {
+      this.updateModeratorPerformance( proposer, 0, 1, 0 );
+    }
+
   }
   
   // action to vote on proposal
@@ -1000,9 +1029,29 @@ export class snipvoting extends Contract {
     );
 
     this.propVotersTable.store(newVoter, this.receiver);
+
+    let winnerCursor = this.winnersTable.first();
+    let isMember = false;
+    while (winnerCursor !== null) {
+      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+        isMember = true;
+        break;
+      }
+      winnerCursor = this.winnersTable.next(winnerCursor);
+    }
+
+    if (isMember) {
+      this.updatePerformance(voter, 0, 0, 1, 0);
+    }
+
+    const isModerator = this.moderatorsTable.get(voter.N);
+    if (isModerator) {
+      this.updateModeratorPerformance( voter, 0, 0, 1 );
+    }
+
   }
   
-  // action to decle proposal result after deadline passed
+  // action to declare proposal result after deadline passed
   @action("closeprop")
   closeProposal(sender: Name): void {
     requireAuth(sender);
@@ -1121,6 +1170,9 @@ export class snipvoting extends Contract {
 
       this.modReportsTable.update(report, this.receiver);
     }
+
+    this.updateModeratorPerformance( moderator, 1, 0, 0 );
+
   }
 
   // action to vote on report to permanently delete or restore post
@@ -1181,6 +1233,8 @@ export class snipvoting extends Contract {
       now
     );
     this.reportVotersTable.store(voterData, this.receiver);
+
+    this.updatePerformance(voter, 0, 0, 1, 0);
   }
   
   // fund transfer configuration
@@ -1280,6 +1334,9 @@ export class snipvoting extends Contract {
     );
 
     this.fundPropTable.store(proposal, this.receiver);
+
+    this.updatePerformance(proposer, 0, 1, 0, 0);
+
   }
   
   // action for vote on fund transfer proposal and transfer fund
@@ -1364,6 +1421,9 @@ export class snipvoting extends Contract {
       now
     );
     this.fundVoteTable.store(voteRecord, this.receiver);
+
+    this.updatePerformance(voter, 0, 0, 1, 0);
+
   }
   
   // action for pause and resume fund distribution
@@ -1425,12 +1485,10 @@ export class snipvoting extends Contract {
     check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
 
     // --- get elected members ---
-    // const allMembers: WinnersTable[] = [];
     const elected: Name[] = [];
 
     let cursor = this.winnersTable.first();
     while (cursor !== null) {
-      // allMembers.push(cursor);
       if (
         stringToU64(cursor.status) === stringToU64("active") &&
         cursor.isFoundingMember === false
@@ -1439,18 +1497,6 @@ export class snipvoting extends Contract {
       }
       cursor = this.winnersTable.next(cursor);
     }
-
-    // const elected: Name[] = [];
-
-    // for (let i = 0; i < allMembers.length; i++) {
-    //   const member = allMembers[i];
-    //   if (
-    //     stringToU64(member.status) === stringToU64("active") &&
-    //     member.isFoundingMember === false
-    //   ) {
-    //     elected.push(member.winner);
-    //   }
-    // }
 
     check(elected.length > 0, "No active elected members found");
 
@@ -1469,7 +1515,7 @@ export class snipvoting extends Contract {
 
     // --- calculate share ---
     const amountToDistribute = totalRevenue / 100 * percent;
-    const amountPerMember = amountToDistribute / u64(5);
+    const amountPerMember = amountToDistribute / u64(elected.length);
 
     check(amountPerMember > 0, "Calculated share is too small to distribute");
     check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
@@ -1501,6 +1547,8 @@ export class snipvoting extends Contract {
       );
 
       action.send(transferParams);
+
+      this.updatePerformance(recipient, 0, 0, 0, u64(amountPerMember));
     }
 
     // --- Store revenue record ---
@@ -1516,6 +1564,101 @@ export class snipvoting extends Contract {
     );
     this.revenueTable.store(record, founder);
   }
+
+  // action to track member performance
+  @action("updateperf")
+  updatePerformance(
+    member: Name,
+    addProposals: u64 = 0,
+    addTokenAllocProposals: u64 = 0,
+    addVotes: u64 = 0,
+    addRevenueShare: u64 = 0
+  ): void {
+
+    let currentTime = currentTimeSec(); 
+    let currentYear: u16 = getYearFromTimestamp(currentTime);
+    let currentMonth: u8 = getMonthFromTimestamp(currentTime);
+
+    let recordKey = (u64(member.N) << 32) | (u64(currentYear) << 8) | u64(currentMonth);
+    let perfRecord = this.memberPerfTable.get(recordKey);
+
+    // Calculate the performance impact
+    let performanceIncrement: u64 = (
+      addProposals * 10 +
+      addTokenAllocProposals * 15 +
+      addVotes * 5 +
+      (addRevenueShare / 10_000_000) // 1 point per 1000 token shared
+    );
+
+    if (perfRecord === null) {
+      // No record yet this month — create new
+      perfRecord = new MemberPerformanceTable(
+        member,
+        currentYear,
+        currentMonth,
+        addProposals,
+        addTokenAllocProposals,
+        addVotes,
+        addRevenueShare,
+        performanceIncrement
+      );
+      this.memberPerfTable.store(perfRecord, this.receiver);
+    } else {
+      // Update existing record by incrementing counts
+      perfRecord.proposalCount += addProposals;
+      perfRecord.tokenAllocProposalCount +=   addTokenAllocProposals;
+      perfRecord.votesCast += addVotes;
+      perfRecord.revenueShare += addRevenueShare;
+      perfRecord.performanceScore += performanceIncrement;
+      this.memberPerfTable.update(perfRecord, this.receiver);
+    }
+  }
+
+  // action to track moderator performance
+  @action("updtmodperf")
+  updateModeratorPerformance(
+    moderator: Name,
+    addReports: u64 = 0,
+    addProposals: u64 = 0,
+    addVotes: u64 = 0
+  ): void {
+    requireAuth(moderator);
+
+    let currentTime = currentTimeSec(); 
+    let currentYear: u16 = getYearFromTimestamp(currentTime);
+    let currentMonth: u8 = getMonthFromTimestamp(currentTime);
+
+    let recordKey = (u64(moderator.N) << 32) | (u64(currentYear) << 8) | u64(currentMonth);
+    let modPerfRecord = this.moderatorPerfTable.get(recordKey);
+
+    // Scoring logic
+    let performanceIncrement: u64 = (
+      addReports * 5 +
+      addProposals * 10 +
+      addVotes * 5
+    );
+
+    if (modPerfRecord === null) {
+      modPerfRecord = new ModeratorPerformanceTable(
+        moderator,
+        currentYear,
+        currentMonth,
+        addReports,
+        addProposals,
+        addVotes,
+        performanceIncrement
+      );
+      this.moderatorPerfTable.store(modPerfRecord, this.receiver);
+    } else {
+      modPerfRecord.reportCount += addReports;
+      modPerfRecord.proposalCount += addProposals;
+      modPerfRecord.votesCast += addVotes;
+      modPerfRecord.performanceScore += performanceIncrement;
+      this.moderatorPerfTable.update(modPerfRecord, this.receiver);
+    }
+  }
+
+
 
 
 
@@ -2665,6 +2808,94 @@ class submitRevenueAction implements _chain.Packer {
     }
 }
 
+class updatePerformanceAction implements _chain.Packer {
+    constructor (
+        public member: _chain.Name | null = null,
+        public addProposals: u64 = 0,
+        public addTokenAllocProposals: u64 = 0,
+        public addVotes: u64 = 0,
+        public addRevenueShare: u64 = 0,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.member!);
+        enc.packNumber<u64>(this.addProposals);
+        enc.packNumber<u64>(this.addTokenAllocProposals);
+        enc.packNumber<u64>(this.addVotes);
+        enc.packNumber<u64>(this.addRevenueShare);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.member! = obj;
+        }
+        this.addProposals = dec.unpackNumber<u64>();
+        this.addTokenAllocProposals = dec.unpackNumber<u64>();
+        this.addVotes = dec.unpackNumber<u64>();
+        this.addRevenueShare = dec.unpackNumber<u64>();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.member!.getSize();
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        return size;
+    }
+}
+
+class updateModeratorPerformanceAction implements _chain.Packer {
+    constructor (
+        public moderator: _chain.Name | null = null,
+        public addReports: u64 = 0,
+        public addProposals: u64 = 0,
+        public addVotes: u64 = 0,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.moderator!);
+        enc.packNumber<u64>(this.addReports);
+        enc.packNumber<u64>(this.addProposals);
+        enc.packNumber<u64>(this.addVotes);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.moderator! = obj;
+        }
+        this.addReports = dec.unpackNumber<u64>();
+        this.addProposals = dec.unpackNumber<u64>();
+        this.addVotes = dec.unpackNumber<u64>();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.moderator!.getSize();
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        size += sizeof<u64>();
+        return size;
+    }
+}
+
 export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 	const _receiver = new _chain.Name(receiver);
 	const _firstReceiver = new _chain.Name(firstReceiver);
@@ -2833,6 +3064,16 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new submitRevenueAction();
             args.unpack(actionData);
             mycontract.submitRevenue(args.founder!,args.totalRevenue,args.percent,args.available);
+        }
+		if (action == 0xD5526CAAAABAC000) {//updateperf
+            const args = new updatePerformanceAction();
+            args.unpack(actionData);
+            mycontract.updatePerformance(args.member!,args.addProposals,args.addTokenAllocProposals,args.addVotes,args.addRevenueShare);
+        }
+		if (action == 0xD55399513555D600) {//updtmodperf
+            const args = new updateModeratorPerformanceAction();
+            args.unpack(actionData);
+            mycontract.updateModeratorPerformance(args.moderator!,args.addReports,args.addProposals,args.addVotes);
         }
 	}
   

@@ -24,3 +24,5 @@ export * from './fundProp.table';
 export * from './fundVotes.table';
 export * from './fundConfig.table';
 export * from './revenues.table';
+export * from './memPerformance.table';
+export * from './modPerformance.table';

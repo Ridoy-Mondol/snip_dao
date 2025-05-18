@@ -280,6 +280,44 @@
       ]
     },
     {
+      "name": "MemberPerformanceTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "member",
+          "type": "name"
+        },
+        {
+          "name": "year",
+          "type": "uint16"
+        },
+        {
+          "name": "month",
+          "type": "uint8"
+        },
+        {
+          "name": "proposalCount",
+          "type": "uint64"
+        },
+        {
+          "name": "tokenAllocProposalCount",
+          "type": "uint64"
+        },
+        {
+          "name": "votesCast",
+          "type": "uint64"
+        },
+        {
+          "name": "revenueShare",
+          "type": "uint64"
+        },
+        {
+          "name": "performanceScore",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "ModRecallTable",
       "base": "",
       "fields": [
@@ -399,6 +437,40 @@
         },
         {
           "name": "registrationTime",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
+      "name": "ModeratorPerformanceTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "year",
+          "type": "uint16"
+        },
+        {
+          "name": "month",
+          "type": "uint8"
+        },
+        {
+          "name": "reportCount",
+          "type": "uint64"
+        },
+        {
+          "name": "proposalCount",
+          "type": "uint64"
+        },
+        {
+          "name": "votesCast",
+          "type": "uint64"
+        },
+        {
+          "name": "performanceScore",
           "type": "uint64"
         }
       ]
@@ -1223,6 +1295,32 @@
       ]
     },
     {
+      "name": "updateperf",
+      "base": "",
+      "fields": [
+        {
+          "name": "member",
+          "type": "name"
+        },
+        {
+          "name": "addProposals",
+          "type": "uint64"
+        },
+        {
+          "name": "addTokenAllocProposals",
+          "type": "uint64"
+        },
+        {
+          "name": "addVotes",
+          "type": "uint64"
+        },
+        {
+          "name": "addRevenueShare",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "updtfundcfg",
       "base": "",
       "fields": [
@@ -1241,6 +1339,28 @@
         {
           "name": "tokenContract",
           "type": "name"
+        }
+      ]
+    },
+    {
+      "name": "updtmodperf",
+      "base": "",
+      "fields": [
+        {
+          "name": "moderator",
+          "type": "name"
+        },
+        {
+          "name": "addReports",
+          "type": "uint64"
+        },
+        {
+          "name": "addProposals",
+          "type": "uint64"
+        },
+        {
+          "name": "addVotes",
+          "type": "uint64"
         }
       ]
     },
@@ -1464,8 +1584,18 @@
       "ricardian_contract": ""
     },
     {
+      "name": "updateperf",
+      "type": "updateperf",
+      "ricardian_contract": ""
+    },
+    {
       "name": "updtfundcfg",
       "type": "updtfundcfg",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "updtmodperf",
+      "type": "updtmodperf",
       "ricardian_contract": ""
     },
     {
@@ -1559,6 +1689,13 @@
       "key_types": []
     },
     {
+      "name": "memberperf",
+      "type": "MemberPerformanceTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
       "name": "modcandidate",
       "type": "ModeratorCandTable",
       "index_type": "i64",
@@ -1568,6 +1705,13 @@
     {
       "name": "moderators",
       "type": "ModeratorsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "modperf",
+      "type": "ModeratorPerformanceTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []
