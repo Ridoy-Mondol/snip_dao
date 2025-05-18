@@ -23,3 +23,4 @@ export * from './reportVoters.table';
 export * from './fundProp.table';
 export * from './fundVotes.table';
 export * from './fundConfig.table';
+export * from './revenues.table';

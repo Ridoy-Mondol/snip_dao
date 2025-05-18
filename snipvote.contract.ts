@@ -1,6 +1,6 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -58,6 +58,8 @@ export class snipvoting extends Contract {
   private fundPropTable: TableStore<FundProposalTable> = new TableStore<FundProposalTable>(this.receiver, this.receiver);
 
   private fundVoteTable: TableStore<FundVoteTable> = new TableStore<FundVoteTable>(this.receiver, this.receiver);
+
+  private revenueTable: TableStore<RevenueRecordTable> = new TableStore<RevenueRecordTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromString('snipstk'));
 
@@ -1235,7 +1237,8 @@ export class snipvoting extends Contract {
 
     this.fundPropTable.store(proposal, this.receiver);
   }
-
+  
+  // action for vote on fund transfer proposal and transfer fund
   @action("votefprop")
   voteFundProposal(voter: Name, proposalId: u64, vote: string): void {
     requireAuth(voter);
@@ -1318,7 +1321,8 @@ export class snipvoting extends Contract {
     );
     this.fundVoteTable.store(voteRecord, this.receiver);
   }
-
+  
+  // action for pause and resume fund distribution
   @action("setfstatus")
   setFundStatus(
     actor: Name,
@@ -1357,6 +1361,104 @@ export class snipvoting extends Contract {
     proposal!.status = newStatus;
     this.fundPropTable.update(proposal!, this.receiver);
   }
+
+  // action for revenue sharing
+  @action("sendrevenue")
+  submitRevenue(
+    founder: Name,
+    totalRevenue: u64,
+    percent: u8,
+    available: u64
+  ): void {
+    requireAuth(founder);
+
+    // --- check role ---
+    // const isFounder = this.foundersTable.exists(founder.N);
+    // check(isFounder, "Only founders can submit revenue");
+
+    check(totalRevenue > 0, "Total revenue must be greater than 0");
+    check(percent > 0 && percent <= 100, "Percent must be between 1 and 100");
+    check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
+
+    // --- get elected members ---
+    const elected: Name[] = [];
+
+    let cursor = this.winnersTable.first();
+    while (cursor !== null) {
+      if (
+        stringToU64(cursor.status) === stringToU64("active") &&
+        cursor.isFoundingMember === false
+      ) {
+        elected.push(cursor.winner);
+      }
+      cursor = this.winnersTable.next(cursor);
+    }
+
+    check(elected.length > 0, "No active elected members found");
+
+    // --- Check time gap since last submission (1 month = 30 * 24 * 60 * 60 seconds) ---
+    let lastRecord = this.revenueTable.last();
+
+    while (lastRecord !== null) {
+      const now = currentTimeSec();
+      const oneMonthInSeconds = 1 * 1 * 5 * 60;
+
+      check(
+        now - lastRecord.timestamp >= oneMonthInSeconds, "Revenue can only be distributed once every 30 days"
+      );
+      lastRecord = null;
+    }
+
+    // --- calculate share ---
+    const amountToDistribute = totalRevenue / 100 * percent;
+    const amountPerMember = amountToDistribute / u64(5);
+
+    check(amountPerMember > 0, "Calculated share is too small to distribute");
+    check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
+
+    // --- format asset string ---
+    const intPart = amountPerMember / 10000;
+    const decPart = amountPerMember % 10000;
+    const assetStr = intPart.toString() + "." + decPart.toString().padStart(4, "0") + " SNIPX";
+    const quantity = Asset.fromString(assetStr);
+
+    // --- config for wallet and token contract ---
+    const config = this.fundConfigTable.get(0);
+    check(config !== null, "Config missing");
+    const communityWallet = config!.communityWallet;
+    const tokenContract = config!.tokenContract;
+
+    // --- loop transfer ---
+    const transfer = new InlineAction<TokenTransfer>("transfer");
+    const perm = new PermissionLevel(communityWallet, Name.fromString("fund"));
+    const action = transfer.act(tokenContract, perm);
+    
+    for (let i = 0; i < elected.length; i++) {
+      const recipient = elected[i];
+      const transferParams = new TokenTransfer(
+        communityWallet,
+        recipient,
+        quantity,
+        `Revenue share`
+      );
+
+      action.send(transferParams);
+    }
+
+    // --- Store revenue record ---
+    const newId = this.revenueTable.availablePrimaryKey;
+    const record = new RevenueRecordTable(
+      newId,
+      founder,
+      totalRevenue,
+      percent,
+      amountPerMember,
+      currentTimeSec(),
+      "distributed"
+    );
+    this.revenueTable.store(record, founder);
+  }
+
 
 
 

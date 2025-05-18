@@ -1,7 +1,7 @@
 import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 
@@ -102,6 +102,8 @@ export class snipvoting extends Contract {
   private fundPropTable: TableStore<FundProposalTable> = new TableStore<FundProposalTable>(this.receiver, this.receiver);
 
   private fundVoteTable: TableStore<FundVoteTable> = new TableStore<FundVoteTable>(this.receiver, this.receiver);
+
+  private revenueTable: TableStore<RevenueRecordTable> = new TableStore<RevenueRecordTable>(this.receiver, this.receiver);
 
   private accountTable: TableStore<AccountsTable> = new TableStore<AccountsTable>(Name.fromU64(0xC4DD5C6600000000));
 
@@ -1190,10 +1192,6 @@ export class snipvoting extends Contract {
     tokenContract: Name
   ): void {
     requireAuth(admin);
-    // check(
-    //   authorizedAccounts.includes(admin.toString()),
-    //   "You are not authorized to perform this action"
-    // );
 
     let isCouncil = false;
     let cursor = this.winnersTable.first();
@@ -1283,7 +1281,8 @@ export class snipvoting extends Contract {
 
     this.fundPropTable.store(proposal, this.receiver);
   }
-
+  
+  // action for vote on fund transfer proposal and transfer fund
   @action("votefprop")
   voteFundProposal(voter: Name, proposalId: u64, vote: string): void {
     requireAuth(voter);
@@ -1366,7 +1365,8 @@ export class snipvoting extends Contract {
     );
     this.fundVoteTable.store(voteRecord, this.receiver);
   }
-
+  
+  // action for pause and resume fund distribution
   @action("setfstatus")
   setFundStatus(
     actor: Name,
@@ -1405,6 +1405,118 @@ export class snipvoting extends Contract {
     proposal!.status = newStatus;
     this.fundPropTable.update(proposal!, this.receiver);
   }
+
+  // action for revenue sharing
+  @action("sendrevenue")
+  submitRevenue(
+    founder: Name,
+    totalRevenue: u64,
+    percent: u8,
+    available: u64
+  ): void {
+    requireAuth(founder);
+
+    // --- check role ---
+    // const isFounder = this.foundersTable.exists(founder.N);
+    // check(isFounder, "Only founders can submit revenue");
+
+    check(totalRevenue > 0, "Total revenue must be greater than 0");
+    check(percent > 0 && percent <= 100, "Percent must be between 1 and 100");
+    check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
+
+    // --- get elected members ---
+    // const allMembers: WinnersTable[] = [];
+    const elected: Name[] = [];
+
+    let cursor = this.winnersTable.first();
+    while (cursor !== null) {
+      // allMembers.push(cursor);
+      if (
+        stringToU64(cursor.status) === stringToU64("active") &&
+        cursor.isFoundingMember === false
+      ) {
+        elected.push(cursor.winner);
+      }
+      cursor = this.winnersTable.next(cursor);
+    }
+
+    // const elected: Name[] = [];
+
+    // for (let i = 0; i < allMembers.length; i++) {
+    //   const member = allMembers[i];
+    //   if (
+    //     stringToU64(member.status) === stringToU64("active") &&
+    //     member.isFoundingMember === false
+    //   ) {
+    //     elected.push(member.winner);
+    //   }
+    // }
+
+    check(elected.length > 0, "No active elected members found");
+
+    // --- Check time gap since last submission (1 month = 30 * 24 * 60 * 60 seconds) ---
+    let lastRecord = this.revenueTable.last();
+
+    while (lastRecord !== null) {
+      const now = currentTimeSec();
+      const oneMonthInSeconds = 1 * 1 * 5 * 60;
+
+      check(
+        now - lastRecord.timestamp >= oneMonthInSeconds, "Revenue can only be distributed once every 30 days"
+      );
+      lastRecord = null;
+    }
+
+    // --- calculate share ---
+    const amountToDistribute = totalRevenue / 100 * percent;
+    const amountPerMember = amountToDistribute / u64(5);
+
+    check(amountPerMember > 0, "Calculated share is too small to distribute");
+    check(available >= totalRevenue * percent / 100, "Insufficient wallet balance to distribute revenue");
+
+    // --- format asset string ---
+    const intPart = amountPerMember / 10000;
+    const decPart = amountPerMember % 10000;
+    const assetStr = intPart.toString() + "." + decPart.toString().padStart(4, "0") + " SNIPX";
+    const quantity = Asset.fromString(assetStr);
+
+    // --- config for wallet and token contract ---
+    const config = this.fundConfigTable.get(0);
+    check(config !== null, "Config missing");
+    const communityWallet = config!.communityWallet;
+    const tokenContract = config!.tokenContract;
+
+    // --- loop transfer ---
+    const transfer = new InlineAction<TokenTransfer>("transfer");
+    const perm = new PermissionLevel(communityWallet, Name.fromU64(0x5EA6900000000000));
+    const action = transfer.act(tokenContract, perm);
+    
+    for (let i = 0; i < elected.length; i++) {
+      const recipient = elected[i];
+      const transferParams = new TokenTransfer(
+        communityWallet,
+        recipient,
+        quantity,
+        `Revenue share`
+      );
+
+      action.send(transferParams);
+    }
+
+    // --- Store revenue record ---
+    const newId = this.revenueTable.availablePrimaryKey;
+    const record = new RevenueRecordTable(
+      newId,
+      founder,
+      totalRevenue,
+      percent,
+      amountPerMember,
+      currentTimeSec(),
+      "distributed"
+    );
+    this.revenueTable.store(record, founder);
+  }
+
 
 
 
@@ -2511,6 +2623,48 @@ class setFundStatusAction implements _chain.Packer {
     }
 }
 
+class submitRevenueAction implements _chain.Packer {
+    constructor (
+        public founder: _chain.Name | null = null,
+        public totalRevenue: u64 = 0,
+        public percent: u8 = 0,
+        public available: u64 = 0,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.pack(this.founder!);
+        enc.packNumber<u64>(this.totalRevenue);
+        enc.packNumber<u8>(this.percent);
+        enc.packNumber<u64>(this.available);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.founder! = obj;
+        }
+        this.totalRevenue = dec.unpackNumber<u64>();
+        this.percent = dec.unpackNumber<u8>();
+        this.available = dec.unpackNumber<u64>();
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += this.founder!.getSize();
+        size += sizeof<u64>();
+        size += sizeof<u8>();
+        size += sizeof<u64>();
+        return size;
+    }
+}
+
 export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
 	const _receiver = new _chain.Name(receiver);
 	const _firstReceiver = new _chain.Name(firstReceiver);
@@ -2674,6 +2828,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new setFundStatusAction();
             args.unpack(actionData);
             mycontract.setFundStatus(args.actor!,args.proposalId,args.newStatus);
+        }
+		if (action == 0xC2A69BAB6A9E9400) {//sendrevenue
+            const args = new submitRevenueAction();
+            args.unpack(actionData);
+            mycontract.submitRevenue(args.founder!,args.totalRevenue,args.percent,args.available);
         }
 	}
   

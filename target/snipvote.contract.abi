@@ -642,6 +642,40 @@
       ]
     },
     {
+      "name": "RevenueRecordTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "id",
+          "type": "uint64"
+        },
+        {
+          "name": "submittedBy",
+          "type": "name"
+        },
+        {
+          "name": "totalRevenue",
+          "type": "uint64"
+        },
+        {
+          "name": "percentToDistribute",
+          "type": "uint8"
+        },
+        {
+          "name": "amountPerRecipient",
+          "type": "uint64"
+        },
+        {
+          "name": "timestamp",
+          "type": "uint64"
+        },
+        {
+          "name": "status",
+          "type": "string"
+        }
+      ]
+    },
+    {
       "name": "StakesTable",
       "base": "",
       "fields": [
@@ -1101,6 +1135,28 @@
       ]
     },
     {
+      "name": "sendrevenue",
+      "base": "",
+      "fields": [
+        {
+          "name": "founder",
+          "type": "name"
+        },
+        {
+          "name": "totalRevenue",
+          "type": "uint64"
+        },
+        {
+          "name": "percent",
+          "type": "uint8"
+        },
+        {
+          "name": "available",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "setfstatus",
       "base": "",
       "fields": [
@@ -1388,6 +1444,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "sendrevenue",
+      "type": "sendrevenue",
+      "ricardian_contract": ""
+    },
+    {
       "name": "setfstatus",
       "type": "setfstatus",
       "ricardian_contract": ""
@@ -1584,6 +1645,13 @@
     {
       "name": "reportvotes",
       "type": "ReportVotesTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "revenues",
+      "type": "RevenueRecordTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []
