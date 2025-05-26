@@ -1,6 +1,6 @@
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, CouncilTable, FoundersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 import {getYearFromTimestamp, getMonthFromTimestamp} from './utils/date';
@@ -27,6 +27,10 @@ export class snipvoting extends Contract {
   private votersTable: TableStore<VotersTable> = new TableStore<VotersTable>(this.receiver, this.receiver);
 
   private winnersTable: TableStore<WinnersTable> = new TableStore<WinnersTable>(this.receiver, this.receiver);
+
+  private councilTable: TableStore<CouncilTable> = new TableStore<CouncilTable>(this.receiver, this.receiver);
+
+  private foundersTable: TableStore<FoundersTable> = new TableStore<FoundersTable>(this.receiver, this.receiver);
 
   private recallVoteTable: TableStore<RecallVotesTable> = new TableStore<RecallVotesTable>(this.receiver, this.receiver);
 
@@ -70,12 +74,13 @@ export class snipvoting extends Contract {
 
   // action to create election by founding members
   @action("createelect")
-  createElection(electionName: string, startTime: u64, endTime: u64, registrationStartTime: u64, registrationEndTime: u64, candidateStakeAmount: u64, voterStakeAmount: u64): void {
+  createElection(electionName: string, startTime: u64, endTime: u64, registrationStartTime: u64, registrationEndTime: u64, candidateStakeAmount: u64, voterStakeAmount: u64, signer: Name): void {
 
-    //  let allowedUser1 = Name.fromString("admin1");
-    //  let allowedUser2 = Name.fromString("admin2");
-
-    //  requireAuth(this.receiver);
+    requireAuth(signer);
+      
+    // ✅ Check if signer is a valid founder
+    const isFounder = this.foundersTable.get(signer.N);
+    check(isFounder !== null, "Only Founding Member Can Create Election");
 
     let existingElection = this.electionsTable.get(stringToU64(electionName));
 
@@ -247,6 +252,9 @@ export class snipvoting extends Contract {
    @action("registercand")
    registerCandidate(account: Name, userName: string, electionName: string): void {
       requireAuth(account);
+
+      let isFounder = this.foundersTable.get(account.N);
+      check(isFounder === null, "Founding members can't apply as candidate");
       
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
@@ -260,7 +268,7 @@ export class snipvoting extends Contract {
       if (election && election.candidateStakeAmount > 0) {
         let userStake = this.accountTable.get(account.N);
         check(userStake !== null, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
-        check(userStake!.totalStaked >= election.candidateStakeAmount, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
+        check(( userStake!.totalStaked / 10000 ) >= election.candidateStakeAmount, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
       }
       
       let existingCandidate = this.candidatesTable.get(account.N + stringToU64(electionName));
@@ -339,7 +347,7 @@ export class snipvoting extends Contract {
         let voterStake = this.accountTable.get(voter.N);
         check(voterStake !== null, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
     
-        check(voterStake!.totalStaked >= election.voterStakeAmount, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
+        check(( voterStake!.totalStaked / 10000 ) >= election.voterStakeAmount, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
       }
     
       let candidateData = this.candidatesTable.get(candidate.N + stringToU64(electionName));
@@ -369,17 +377,12 @@ export class snipvoting extends Contract {
    
    // action to declareWinners by founding members
    @action("winner")
-   declareWinners(electionName: string, signer: string): void {
-      const authorizedAccounts = [
-        this.receiver.toString(),
-        "ahatashamul",
-        "ahatashamul1",
-      ];
-  
-      check(
-        authorizedAccounts.includes(signer),
-        "You are not authorized to perform this action"
-      );
+   declareWinners(electionName: string, signer: Name): void {
+      requireAuth(signer);
+      
+      // ✅ Check if signer is a valid founder
+      const isFounder = this.foundersTable.get(signer.N);
+      check(isFounder !== null, "Only Founding Members Can Declare Members");
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
@@ -408,6 +411,14 @@ export class snipvoting extends Contract {
         winnerCursor = this.winnersTable.next(winnerCursor);
       }
 
+      // Clear previous council members
+      let councilCursor = this.councilTable.first();
+      while (councilCursor !== null) {
+        this.councilTable.remove(councilCursor);
+        councilCursor = this.councilTable.next(councilCursor);
+      }
+      
+      // Get all candidates
       let allCandidates: CandidatesTable[] = [];
 
       let cursor = this.candidatesTable.first();
@@ -416,7 +427,7 @@ export class snipvoting extends Contract {
         cursor = this.candidatesTable.next(cursor);
       }
 
-      // Now filter based on electionName
+      // Filter candidates by election name
       let filteredCandidates: CandidatesTable[] = [];
       for (let i = 0; i < allCandidates.length; i++) {
        let candidate = allCandidates[i];
@@ -426,15 +437,19 @@ export class snipvoting extends Contract {
       }
 
       check(filteredCandidates.length > 0, "No candidates found.");
-
+      
+      // Sort by votes and pick top 5
       let sortedCandidates = filteredCandidates.sort((a: CandidatesTable, b: CandidatesTable) => b.totalVotes as i32 - a.totalVotes as i32);
 
       let topCandidates = sortedCandidates.slice(0, 5);
       check(topCandidates.length > 0, "No winners found.");
-
+      
+      // ✅ Save winners and council entries
       let rank: u8 = 1;
       for (let i = 0; i < topCandidates.length; i++) {
         let candidate = topCandidates[i];
+
+        // Add to WinnersTable
         let winnerEntry = new WinnersTable(
           candidate.account,
           candidate.userName,
@@ -442,49 +457,104 @@ export class snipvoting extends Contract {
           electionName,
           rank,
           false,
-          "active"
+          "active",
         );
         this.winnersTable.store(winnerEntry, this.receiver);
-        rank++;
-      }      
-      
-      let foundingMembers: Name[] = [
-        Name.fromString("founder1"),
-        Name.fromString("founder2"),
-      ];
 
-      let founderUsernames = new Map<string, string>();
-      founderUsernames.set("founder1", "Founder1");
-      founderUsernames.set("founder2", "Founder2");
-
-      for (let i = 0; i < foundingMembers.length; i++) {
-        let founder = foundingMembers[i];
-        let userName = founderUsernames.get(founder.toString()) || "";
-        let founderEntry = new WinnersTable(
-          founder,
-          userName,
-          0,
-          electionName,
+        // Add to CouncilTable
+        let councilEntry = new CouncilTable(
+          candidate.account,
+          candidate.userName,
+          false,
           rank,
-          true,
-          "active"
+          currentTime,
         );
-        this.winnersTable.store(founderEntry, this.receiver);
+        this.councilTable.store(councilEntry, this.receiver);
+
         rank++;
       }      
+
+      let founder = this.foundersTable.first();
+      while (founder !== null) {
+        let founderAcc = founder.account;
+        let userName = founder.userName;
+
+        let councilEntry = new CouncilTable(
+          founderAcc,
+          userName,
+          true,
+          rank,
+          currentTime
+        );
+        this.councilTable.store(councilEntry, this.receiver);
+
+        rank++;
+        founder = this.foundersTable.next(founder);
+      }
 
       election!.status = "ended";
       this.electionsTable.update(election!, this.receiver);
    }
+
+   //  action to add founding member
+   @action("setfounders")
+   setFounders(accounts: Name[], userNames: string[], signer: Name): void {
+
+      requireAuth(signer);
+
+      check(authorizedAccounts.includes(signer.toString()) || signer == this.receiver, "You are not authorized to perform this action");
+
+      check(accounts.length === 2, "Exactly 2 founding members required");
+      check(accounts.length === userNames.length, "Mismatched usernames");
+
+      // Remove all existing founders 
+      let cursor = this.foundersTable.first();
+      while (cursor !== null) {
+        const toRemove = cursor;
+        cursor = this.foundersTable.next(cursor);
+        this.foundersTable.remove(toRemove);
+      }
+
+      // ✅ Collect ranks and remove council founders
+      let preservedRanks: u8[] = [];
+      let councilCursor = this.councilTable.first();
+      while (councilCursor !== null) {
+        const current = councilCursor;
+        councilCursor = this.councilTable.next(current);
+
+        if (current.isFoundingMember === true) {
+          preservedRanks.push(current.rank);
+          this.councilTable.remove(current);
+        }
+      }
+
+      while (preservedRanks.length < accounts.length) {
+        preservedRanks.push(6 + preservedRanks.length as u8);
+      }
+
+      // Store new founders and their council entries with preserved rank
+      for (let i = 0; i < accounts.length; i++) {
+        const account = accounts[i];
+        const userName = userNames[i];
+        const rank = preservedRanks[i];
+
+        const newFounder = new FoundersTable(account, userName);
+        this.foundersTable.store(newFounder, this.receiver);
+
+        const newCouncilEntry = new CouncilTable(account, userName, true, rank, currentTimeSec());
+        this.councilTable.store(newCouncilEntry, this.receiver);
+      }
+   }
    
-  // action to create recall vote by founding member
+   // action to create recall vote by founding member
    @action("createrecall")
-   createRecallVoting ( councilMember: Name, electionName: string, reason: string, startTime: u64, endTime: u64, signer: string ): void {
+   createRecallVoting ( councilMember: Name, electionName: string, reason: string, startTime: u64, endTime: u64, signer: Name ): void {
   
-      check(
-        authorizedAccounts.includes(signer),
-        "You are not authorized to perform this action"
-      );
+      requireAuth(signer);
+      
+      // ✅ Check if signer is a valid founder
+      const isFounder = this.foundersTable.get(signer.N);
+      check(isFounder !== null, "Only Founding Members Can Recall Member");
 
       let election = this.electionsTable.get(stringToU64(electionName));
       check(election !== null, "Election not found");
@@ -513,9 +583,10 @@ export class snipvoting extends Contract {
       );
 
       this.recallVoteTable.store(recallEntry, this.receiver);
+
    }
    
-  // recall vote action
+   // recall vote action
    @action("recall")
    recallVote(voter: Name, userName: string, councilMember: Name, electionName: string, voteToReplace: boolean): void {
     requireAuth(voter);
@@ -567,12 +638,13 @@ export class snipvoting extends Contract {
 
   // action to determine candidates replaced or not
   @action("recallresult")
-  recallResult(electionName: string, signer: string): void {
+  recallResult(electionName: string, signer: Name): void {
 
-    check(
-      authorizedAccounts.includes(signer),
-      "You are not authorized to perform this action"
-    );
+    requireAuth(signer);
+      
+    // ✅ Check if signer is a valid founder
+    const isFounder = this.foundersTable.get(signer.N);
+    check(isFounder !== null, "Only Founding Members Can Perform This Action");
 
     let election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election not found");
@@ -587,33 +659,38 @@ export class snipvoting extends Contract {
 	    cursor = this.recallVoteTable.next(cursor);
     }
 
-    check(recallVotes.length > 0, "No recall votes found for this election");
+    check(recallVotes.length > 0, "No recall votes found");
 
     // ✅ Step 2: Process each recall vote entry
     for (let i = 0; i < recallVotes.length; i++) {
 	   let recallVote = recallVotes[i];
 
-	   if (electionName.toLowerCase().toString() === recallVote.electionName.toLowerCase().toString()) {
+	   if (stringToU64(electionName.toLowerCase().toString()) === stringToU64(recallVote.electionName.toLowerCase().toString())) {
 		  check(currentTime > recallVote.endTime, "Recall voting period has not ended yet");
-      check(currentTime >= recallVote.startTime, "Recall voting period has not started yet");
 
 		  // ✅ Ensure the recall vote supports replacing the member
-      check(recallVote.replaceVotes > recallVote.keepVotes, "Not enough votes to replace the council member");
+      if (recallVote.replaceVotes < recallVote.keepVotes) {
+        recallVote.status = "retained";
+        this.recallVoteTable.update(recallVote, this.receiver);
+        return;
+      }
 
-      let councilMemberEntry = this.winnersTable.get(recallVote.councilMember.N + stringToU64(electionName));
-      check(councilMemberEntry !== null, "Council member not found for recall");
+      let winnersTableEntry = this.winnersTable.get(recallVote.councilMember.N + stringToU64(electionName));
+      let councilTableEntry = this.councilTable.get(recallVote.councilMember.N)
+      check(winnersTableEntry !== null && councilTableEntry !== null, "Council member not found for recall");
 
 			let removedRank: u8 = 0;
-			if (councilMemberEntry !== null) {
-				removedRank = councilMemberEntry.rank;
-				this.winnersTable.remove(councilMemberEntry);
+			if (winnersTableEntry !== null && councilTableEntry !== null) {
+				removedRank = winnersTableEntry.rank;
+				this.winnersTable.remove(winnersTableEntry);
+        this.councilTable.remove(councilTableEntry);
 			}
 
 			// ✅ Step 3: Collect all candidates in an array
 			let candidates: CandidatesTable[] = [];
 			let cursor2 = this.candidatesTable.first();
 			while (cursor2 !== null) {
-				if (cursor2.electionName === electionName) {
+				if (stringToU64(cursor2.electionName) === stringToU64(electionName)) {
 					candidates.push(cursor2);
 				}
 				cursor2 = this.candidatesTable.next(cursor2);
@@ -626,7 +703,7 @@ export class snipvoting extends Contract {
 			for (let j = 0; j < candidates.length; j++) {
 				let candidate = candidates[j];
 
-        if (candidate.account === recallVote.councilMember) {
+        if (candidate.account.N === recallVote.councilMember.N) {
           continue;
         }
 
@@ -642,21 +719,34 @@ export class snipvoting extends Contract {
         
 			}
 
-      check(highestVotedCandidate !== null, "No valid candidates found to replace the recalled member");
+      if (highestVotedCandidate === null) {
+        recallVote.status = "retained";
+        this.recallVoteTable.update(recallVote, this.receiver);
+        return;
+      }
 
 			// ✅ Step 5: Store the new council member with the correct rank
 			if (highestVotedCandidate !== null) {
-				let newCouncilMember = new WinnersTable(
+				let newWinner = new WinnersTable(
 					highestVotedCandidate.account,
           highestVotedCandidate.userName,
 					highestVotedCandidate.totalVotes,
 					electionName,
 					removedRank
 				);
-				this.winnersTable.update(newCouncilMember, this.receiver);
+				this.winnersTable.update(newWinner, this.receiver);
+
+        let newCouncil = new CouncilTable(
+					highestVotedCandidate.account,
+          highestVotedCandidate.userName,
+          false,
+					removedRank,
+          currentTime
+				);
+				this.councilTable.update(newCouncil, this.receiver);
 			}
 
-      recallVote.status = "ended";
+      recallVote.status = "recalled";
       this.recallVoteTable.update(recallVote, this.receiver);
 	   }
     }
@@ -671,7 +761,7 @@ export class snipvoting extends Contract {
 
     //  let userStake = this.accountTable.get(account.N);
     //  check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
-    //  check(userStake!.totalStaked >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
+    //  check(( userStake!.totalStaked / 10000 ) >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
      
      let existingCandidate = this.moderatorCandTable.get(account.N);
 
@@ -697,22 +787,12 @@ export class snipvoting extends Contract {
 
      let currentTime = currentTimeSec();
 
-     let winnerCursor = this.winnersTable.first();
-     let isValidVoter = false;
-     while (winnerCursor !== null) {
-       if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
-         isValidVoter = true;
-         break;
-       }
-       winnerCursor = this.winnersTable.next(winnerCursor);
-     }
-
-     check(isValidVoter === true, "Only council members can vote");
+     const isValidVoter = this.councilTable.get(voter.N);
+     check(isValidVoter !== null, "Only council members can vote");
 
      let voterExist = this.moderatorVotersTable.get((voter.N << 32) | (candidate.N & 0xFFFFFFFF));
      check(voterExist === null, "You have already voted for this candidate");
 
-   
      let candidateData = this.moderatorCandTable.get(candidate.N);
      check(candidateData !== null, "Candidate not found");
      check(stringToU64(candidateData!.status.toString().toLowerCase().trim()) === stringToU64("pending"), "Voting has ended for this candidate");
@@ -763,17 +843,8 @@ export class snipvoting extends Contract {
   initModRecall(moderator: Name, reason: string, signer: Name): void {
     requireAuth(signer);
 
-    let winnerCursor = this.winnersTable.first();
-     let isCouncil = false;
-     while (winnerCursor !== null) {
-       if (winnerCursor.winner.N === signer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
-        isCouncil = true;
-         break;
-       }
-       winnerCursor = this.winnersTable.next(winnerCursor);
-     }
-
-    check(isCouncil === true, "Only council members can recall moderator");
+    const isCouncil = this.councilTable.get(signer.N);
+    check(isCouncil !== null, "Only council members can recall moderator");
 
     let moderatorExist = this.moderatorsTable.get(moderator.N);
     check(moderatorExist !== null, "Moderator not found");
@@ -819,18 +890,8 @@ export class snipvoting extends Contract {
     check(recall !== null, "Recall vote not found for this moderator");
     check(stringToU64(recall!.status) === stringToU64("pending"), "This recall vote is no longer active");
 
-    // only council members can vote
-    let winnerCursor = this.winnersTable.first();
-    let isValidVoter = false;
-    while (winnerCursor !== null) {
-      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
-        isValidVoter = true;
-        break;
-      }
-      winnerCursor = this.winnersTable.next(winnerCursor);
-    }
-
-    check(isValidVoter === true, "Only council members can vote");
+    const isValidVoter = this.councilTable.get(voter.N);
+    check(isValidVoter !== null, "Only council members can vote");
 
     const alreadyVoted = this.modRecallVotersTable.get(voter.N + recallId);
     check(alreadyVoted === null, "You have already voted in this recall");
@@ -876,12 +937,13 @@ export class snipvoting extends Contract {
   
   // action to update staking requirement for proposal
   @action("updateconfig")
-  updateConfig(admin: string, proposalStake: u64,   voteStake: u64): void {
+  updateConfig(admin: Name, proposalStake: u64,   voteStake: u64): void {
 
-    check(
-      authorizedAccounts.includes(admin),
-      "You are not authorized to perform this action"
-    );
+    requireAuth(admin);
+      
+    // ✅ Check if signer is a valid founder
+    const isFounder = this.foundersTable.get(admin.N);
+    check(isFounder !== null, "Only Founding Members Can Update Configuration");
 
     const existing = this.propConfigTable.get(0);
     if (existing !== null) {
@@ -905,7 +967,7 @@ export class snipvoting extends Contract {
     if (config!.proposalStake > 0) {
       let userStake = this.accountTable.get(proposer.N);
       check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
-      check(userStake!.totalStaked >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+      check((userStake!.totalStaked / 10000) >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
     }
 
     check(deadline > currentTimeSec(), "Deadline must be in the future");
@@ -960,7 +1022,7 @@ export class snipvoting extends Contract {
     if (config!.voteStake > 0) {
       let userStake = this.accountTable.get(voter.N);
       check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
-      check(userStake!.totalStaked >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+      check((userStake!.totalStaked / 10000) >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
     }
 
     const now = currentTimeSec();
@@ -1011,11 +1073,10 @@ export class snipvoting extends Contract {
   @action("closeprop")
   closeProposal(sender: Name): void {
     requireAuth(sender);
-
-    check(
-      authorizedAccounts.includes(sender.toString()),
-      "You are not authorized to perform this action"
-    );
+      
+    // ✅ Check if sender is a valid founder
+    const isFounder = this.foundersTable.get(sender.N);
+    check(isFounder !== null, "Only Founding Members Can Perform This Action");
 
     const config = this.propConfigTable.get(0);
     check(config !== null, "Proposal config not found");
@@ -1077,8 +1138,8 @@ export class snipvoting extends Contract {
   reportPost( moderator: Name, postId: string, reason: string, category: string): void {
     requireAuth(moderator);
 
-    let correctMod = this.moderatorsTable.get(moderator.N);
-    check (correctMod !== null, "Only Moderators can Report");
+    let isMod = this.moderatorsTable.get(moderator.N);
+    check (isMod !== null, "Only Moderators can Report");
   
     let report = this.modReportsTable.get(stringToU64(postId));
 
@@ -1138,17 +1199,8 @@ export class snipvoting extends Contract {
 
     const now = currentTimeSec();
 
-    let winnerCursor = this.winnersTable.first();
-    let isValidVoter = false;
-    while (winnerCursor !== null) {
-      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
-        isValidVoter = true;
-        break;
-      }
-      winnerCursor = this.winnersTable.next(winnerCursor);
-    }
-
-    check(isValidVoter === true, "Only council members can vote");
+    const isValidVoter = this.councilTable.get(voter.N);
+    check(isValidVoter !== null, "Only council members can vote");
 
     const voterKey = stringToU64(postId) + voter.N;
     const existingVote = this.reportVotersTable.get(voterKey);
@@ -1203,19 +1255,8 @@ export class snipvoting extends Contract {
   ): void {
     requireAuth(admin);
 
-    let isCouncil = false;
-    let cursor = this.winnersTable.first();
-    while (cursor !== null) {
-      if (
-        cursor.winner.N == admin.N &&
-        stringToU64(cursor.status) == stringToU64("active")
-      ) {
-        isCouncil = true;
-        break;
-      }
-      cursor = this.winnersTable.next(cursor);
-    }
-    check(isCouncil, "Only council members can update configuration");
+    const isCouncil = this.councilTable.get(admin.N);
+    check(isCouncil !== null, "Only council members can update configuration");
 
     check(maxSharePercent > 0 && maxSharePercent <= 100, "Percentage must be between 1 and 100");
 
@@ -1243,19 +1284,8 @@ export class snipvoting extends Contract {
   ): void {
     requireAuth(proposer);
 
-    let isCouncil = false;
-    let cursor = this.winnersTable.first();
-    while (cursor !== null) {
-      if (
-        cursor.winner.N == proposer.N &&
-        stringToU64(cursor.status) == stringToU64("active")
-      ) {
-        isCouncil = true;
-        break;
-      }
-      cursor = this.winnersTable.next(cursor);
-    }
-    check(isCouncil, "Only council members can propose");
+    const isCouncil = this.councilTable.get(proposer.N);
+    check(isCouncil !== null, "Only council members can propose");
 
     check(isAccount(recipient), "Recipient account does not exist");
 
@@ -1302,19 +1332,8 @@ export class snipvoting extends Contract {
 
     const now = currentTimeSec();
 
-    let isCouncil = false;
-    let winnerCursor = this.winnersTable.first();
-    while (winnerCursor !== null) {
-      if (
-        winnerCursor.winner.N === voter.N &&
-        stringToU64(winnerCursor.status) === stringToU64("active")
-      ) {
-        isCouncil = true;
-        break;
-      }
-      winnerCursor = this.winnersTable.next(winnerCursor);
-    }
-    check(isCouncil, "Only council members can vote on fund proposals");
+    const isCouncil = this.councilTable.get(voter.N);
+    check(isCouncil !== null, "Only council members can vote on fund proposals");
 
     check(
     stringToU64(vote) === stringToU64("approve") || stringToU64(vote) === stringToU64("reject"),
@@ -1335,7 +1354,7 @@ export class snipvoting extends Contract {
       proposal!.rejectedBy += 1;
     }
 
-    if (proposal!.approvedBy >= 3) {
+    if (proposal!.approvedBy >= 4) {
       proposal!.status = "approved";
       proposal!.approvedAt = now;
 
@@ -1364,7 +1383,7 @@ export class snipvoting extends Contract {
 
       action.send(params);
       
-    } else if (proposal!.rejectedBy >= 3) {
+    } else if (proposal!.rejectedBy >= 4) {
       proposal!.status = "rejected";
     }
 
@@ -1391,19 +1410,8 @@ export class snipvoting extends Contract {
   ): void {
     requireAuth(actor);
 
-    let isCouncil = false;
-    let cursor = this.winnersTable.first();
-    while (cursor !== null) {
-      if (
-        cursor.winner.N == actor.N &&
-        stringToU64(cursor.status) == stringToU64("active")
-      ) {
-        isCouncil = true;
-        break;
-      }
-      cursor = this.winnersTable.next(cursor);
-    }
-    check(isCouncil, "Only council members can pause or resume fund distribution");
+    const isCouncil = this.councilTable.get(actor.N);
+    check(isCouncil !== null, "Only council members can pause or resume fund distribution");
 
     check(
       stringToU64(newStatus) == stringToU64("paused") || stringToU64(newStatus) == stringToU64("open"),
@@ -1433,8 +1441,8 @@ export class snipvoting extends Contract {
     requireAuth(founder);
 
     // --- check role ---
-    // const isFounder = this.foundersTable.exists(founder.N);
-    // check(isFounder, "Only founders can submit revenue");
+    const isFounder = this.foundersTable.get(founder.N);
+    check(isFounder !== null, "Only founding members can submit revenue");
 
     check(totalRevenue > 0, "Total revenue must be greater than 0");
     check(percent > 0 && percent <= 100, "Percent must be between 1 and 100");
@@ -1613,23 +1621,5 @@ export class snipvoting extends Contract {
       this.moderatorPerfTable.update(modPerfRecord, this.receiver);
     }
   }
-
-
-
-
-
-
-
-
-  
-
- 
-
-
-
-
-
-
-
 
 }

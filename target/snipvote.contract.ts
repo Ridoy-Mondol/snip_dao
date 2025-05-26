@@ -1,7 +1,7 @@
 import * as _chain from "as-chain";
 import { Name, TableStore, requireAuth, check, Contract, currentTimeSec, Asset, PermissionLevel, ActionData, InlineAction, isAccount } from "proton-tsc";
 
-import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
+import { AccountsTable, ElectionsTable, CandidatesTable, VotersTable, WinnersTable, FoundersTable, RecallVotesTable, RecallVotersTable, ModeratorCandTable, ModeratorsTable, ModeratorVotersTable, ModRecallTable, ModRecallVotersTable, ProposalsTable, PropVotersTable, PropConfigTable, ModReportsTable, ReportVotesTable, ReportVotersTable, FundConfigTable, FundProposalTable, FundVoteTable, RevenueRecordTable, MemberPerformanceTable, ModeratorPerformanceTable } from "./tables";
 import {stringToU64} from './utils'
 import {authorizedAccounts} from './utils/accounts';
 import {getYearFromTimestamp, getMonthFromTimestamp} from './utils/date';
@@ -71,6 +71,8 @@ export class snipvoting extends Contract {
   private votersTable: TableStore<VotersTable> = new TableStore<VotersTable>(this.receiver, this.receiver);
 
   private winnersTable: TableStore<WinnersTable> = new TableStore<WinnersTable>(this.receiver, this.receiver);
+
+  private foundersTable: TableStore<FoundersTable> = new TableStore<FoundersTable>(this.receiver, this.receiver);
 
   private recallVoteTable: TableStore<RecallVotesTable> = new TableStore<RecallVotesTable>(this.receiver, this.receiver);
 
@@ -520,8 +522,34 @@ export class snipvoting extends Contract {
       election!.status = "ended";
       this.electionsTable.update(election!, this.receiver);
    }
+
+  //  action to add founding member
+   @action("setfounders")
+   setFounders(accounts: Name[], userNames: string[], signer: Name): void {
+
+      requireAuth(signer);
+
+      check(authorizedAccounts.includes(signer.toString()) || signer == this.receiver, "You are not authorized to perform this action");
+
+      check(accounts.length === 2, "Exactly 2 founding members required");
+      check(accounts.length === userNames.length, "Mismatched usernames");
+      
+      // Remove all existing founders 
+      let cursor = this.foundersTable.first();
+      while (cursor !== null) {
+        const toRemove = cursor;
+        cursor = this.foundersTable.next(cursor);
+        this.foundersTable.remove(toRemove);
+      }
+
+      // Store new founders
+      for (let i = 0; i < accounts.length; i++) {
+        const newFounder = new FoundersTable(accounts[i], userNames[i]);
+        this.foundersTable.store(newFounder, this.receiver);
+      }
+   }
    
-  // action to create recall vote by founding member
+   // action to create recall vote by founding member
    @action("createrecall")
    createRecallVoting ( councilMember: Name, electionName: string, reason: string, startTime: u64, endTime: u64, signer: string ): void {
   
@@ -2064,6 +2092,62 @@ class declareWinnersAction implements _chain.Packer {
     }
 }
 
+class setFoundersAction implements _chain.Packer {
+    constructor (
+        public accounts: Array<_chain.Name> | null = null,
+        public userNames: Array<string> | null = null,
+        public signer: _chain.Name | null = null,
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        enc.packObjectArray(this.accounts!);
+        enc.packStringArray(this.userNames!)
+        enc.pack(this.signer!);
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        
+    {
+        let length = <i32>dec.unpackLength();
+        this.accounts! = new Array<_chain.Name>(length)
+        for (let i=0; i<length; i++) {
+            let obj = new _chain.Name();
+            this.accounts![i] = obj;
+            dec.unpack(obj);
+        }
+    }
+
+        this.userNames! = dec.unpackStringArray();
+        
+        {
+            let obj = new _chain.Name();
+            dec.unpack(obj);
+            this.signer! = obj;
+        }
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        size += _chain.calcPackedVarUint32Length(this.accounts!.length);
+        for (let i=0; i<this.accounts!.length; i++) {
+            size += this.accounts![i].getSize();
+        }
+
+        size += _chain.calcPackedVarUint32Length(this.userNames!.length);
+        for (let i=0; i<this.userNames!.length; i++) {
+            size += _chain.Utils.calcPackedStringLength(this.userNames![i]);
+        }
+
+        size += this.signer!.getSize();
+        return size;
+    }
+}
+
 class createRecallVotingAction implements _chain.Packer {
     constructor (
         public councilMember: _chain.Name | null = null,
@@ -2974,6 +3058,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new declareWinnersAction();
             args.unpack(actionData);
             mycontract.declareWinners(args.electionName,args.signer);
+        }
+		if (action == 0xC2B2BA6A6955F000) {//setfounders
+            const args = new setFoundersAction();
+            args.unpack(actionData);
+            mycontract.setFounders(args.accounts!,args.userNames!,args.signer!);
         }
 		if (action == 0x45D46CAAEA41A310) {//createrecall
             const args = new createRecallVotingAction();

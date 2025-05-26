@@ -11,7 +11,7 @@ export class RecallVotesTable extends Table {
         public replaceVotes: u64 = 0,
         public startTime: u64 = 0,
         public endTime: u64 = 0,
-        public status: string = "upcoming", // Status: upcoming, ongoing, ended
+        public status: string = "upcoming", // Status: upcoming, ongoing, recalled, retained
     ) {
         super();
     }

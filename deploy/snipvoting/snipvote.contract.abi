@@ -172,6 +172,24 @@
       ]
     },
     {
+      "name": "FoundersTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "addedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "FundConfigTable",
       "base": "",
       "fields": [
@@ -1229,6 +1247,24 @@
       ]
     },
     {
+      "name": "setfounders",
+      "base": "",
+      "fields": [
+        {
+          "name": "accounts",
+          "type": "name[]"
+        },
+        {
+          "name": "userNames",
+          "type": "string[]"
+        },
+        {
+          "name": "signer",
+          "type": "name"
+        }
+      ]
+    },
+    {
       "name": "setfstatus",
       "base": "",
       "fields": [
@@ -1569,6 +1605,11 @@
       "ricardian_contract": ""
     },
     {
+      "name": "setfounders",
+      "type": "setfounders",
+      "ricardian_contract": ""
+    },
+    {
       "name": "setfstatus",
       "type": "setfstatus",
       "ricardian_contract": ""
@@ -1663,6 +1704,13 @@
     {
       "name": "elections",
       "type": "ElectionsTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "founders",
+      "type": "FoundersTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

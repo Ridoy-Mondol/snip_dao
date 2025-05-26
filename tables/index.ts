@@ -7,6 +7,8 @@ export * from './elections.table';
 export * from './candidates.table';
 export * from './voters.table';
 export * from './winners.table';
+export * from './council.table';
+export * from './founders.table';
 export * from './recallVote.table';
 export * from './recallVoters.table';
 export * from './moderatorCand.table';
