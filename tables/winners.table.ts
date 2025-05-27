@@ -10,7 +10,6 @@ export class WinnersTable extends Table {
         public totalVotes: u64 = 0,
         public electionName: string = "",
         public rank: u8 = 0,
-        public isFoundingMember: boolean = false,
         public status: string = "active" // "active", "expired"
     ) {
         super()

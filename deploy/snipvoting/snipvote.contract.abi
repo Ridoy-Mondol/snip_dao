@@ -126,6 +126,36 @@
       ]
     },
     {
+      "name": "CouncilTable",
+      "base": "",
+      "fields": [
+        {
+          "name": "account",
+          "type": "name"
+        },
+        {
+          "name": "userName",
+          "type": "string"
+        },
+        {
+          "name": "isFoundingMember",
+          "type": "bool"
+        },
+        {
+          "name": "electionName",
+          "type": "string"
+        },
+        {
+          "name": "rank",
+          "type": "uint8"
+        },
+        {
+          "name": "startedAt",
+          "type": "uint64"
+        }
+      ]
+    },
+    {
       "name": "ElectionsTable",
       "base": "",
       "fields": [
@@ -900,10 +930,6 @@
           "type": "uint8"
         },
         {
-          "name": "isFoundingMember",
-          "type": "bool"
-        },
-        {
           "name": "status",
           "type": "string"
         }
@@ -995,6 +1021,10 @@
         {
           "name": "voterStakeAmount",
           "type": "uint64"
+        },
+        {
+          "name": "signer",
+          "type": "name"
         }
       ]
     },
@@ -1054,7 +1084,7 @@
         },
         {
           "name": "signer",
-          "type": "string"
+          "type": "name"
         }
       ]
     },
@@ -1161,8 +1191,12 @@
           "type": "string"
         },
         {
+          "name": "member",
+          "type": "name"
+        },
+        {
           "name": "signer",
-          "type": "string"
+          "type": "name"
         }
       ]
     },
@@ -1318,7 +1352,7 @@
       "fields": [
         {
           "name": "admin",
-          "type": "string"
+          "type": "name"
         },
         {
           "name": "proposalStake",
@@ -1468,7 +1502,7 @@
         },
         {
           "name": "signer",
-          "type": "string"
+          "type": "name"
         }
       ]
     },
@@ -1697,6 +1731,13 @@
     {
       "name": "config",
       "type": "ConfigTable",
+      "index_type": "i64",
+      "key_names": [],
+      "key_types": []
+    },
+    {
+      "name": "council",
+      "type": "CouncilTable",
       "index_type": "i64",
       "key_names": [],
       "key_types": []

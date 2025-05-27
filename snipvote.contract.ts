@@ -456,7 +456,6 @@ export class snipvoting extends Contract {
           candidate.totalVotes,
           electionName,
           rank,
-          false,
           "active",
         );
         this.winnersTable.store(winnerEntry, this.receiver);
@@ -466,6 +465,7 @@ export class snipvoting extends Contract {
           candidate.account,
           candidate.userName,
           false,
+          electionName,
           rank,
           currentTime,
         );
@@ -483,6 +483,7 @@ export class snipvoting extends Contract {
           founderAcc,
           userName,
           true,
+          electionName,
           rank,
           currentTime
         );
@@ -517,9 +518,11 @@ export class snipvoting extends Contract {
 
       // ✅ Collect ranks and remove council founders
       let preservedRanks: u8[] = [];
+      let electionName: string[] = [];
       let councilCursor = this.councilTable.first();
       while (councilCursor !== null) {
         const current = councilCursor;
+        electionName.push(current.electionName);
         councilCursor = this.councilTable.next(current);
 
         if (current.isFoundingMember === true) {
@@ -536,13 +539,19 @@ export class snipvoting extends Contract {
       for (let i = 0; i < accounts.length; i++) {
         const account = accounts[i];
         const userName = userNames[i];
-        const rank = preservedRanks[i];
 
         const newFounder = new FoundersTable(account, userName);
-        this.foundersTable.store(newFounder, this.receiver);
 
-        const newCouncilEntry = new CouncilTable(account, userName, true, rank, currentTimeSec());
-        this.councilTable.store(newCouncilEntry, this.receiver);
+        this.foundersTable.store(newFounder, this.receiver);
+        
+        if (electionName.length > 0) {
+          const rank = preservedRanks[i];
+          const election = electionName[i];
+
+          const newCouncilEntry = new CouncilTable(account, userName, true, election, rank, currentTimeSec());
+
+          this.councilTable.store(newCouncilEntry, this.receiver);
+        }
       }
    }
    
@@ -560,8 +569,9 @@ export class snipvoting extends Contract {
       check(election !== null, "Election not found");
 
       let member = this.winnersTable.get(councilMember.N + stringToU64(electionName));
-      check(member !== null, "Council member not found");
-      check(member!.isFoundingMember === false, "Founding members can't be replaced");
+      let council = this.councilTable.get(councilMember.N)
+      check(member !== null && council !== null, "Council member not found");
+      check(council!.isFoundingMember === false, "Founding members can't be replaced");
 
       let recallExist = this.recallVoteTable.get(councilMember.N + stringToU64(electionName));
       check(recallExist === null, "Recall vote already created");
@@ -636,120 +646,85 @@ export class snipvoting extends Contract {
     this.recallVotersTable.store(recallVoter, this.receiver);
    }
 
-  // action to determine candidates replaced or not
   @action("recallresult")
-  recallResult(electionName: string, signer: Name): void {
-
+  recallResult(electionName: string, member: Name, signer: Name): void {
     requireAuth(signer);
-      
-    // ✅ Check if signer is a valid founder
+
+    // Check if signer is a founder
     const isFounder = this.foundersTable.get(signer.N);
     check(isFounder !== null, "Only Founding Members Can Perform This Action");
 
-    let election = this.electionsTable.get(stringToU64(electionName));
+    const election = this.electionsTable.get(stringToU64(electionName));
     check(election !== null, "Election not found");
 
-    let currentTime = currentTimeSec();
+    const currentTime = currentTimeSec();
 
-    // ✅ Step 1: Collect all recall vote records in an array
-    let recallVotes: RecallVotesTable[] = [];
-    let cursor = this.recallVoteTable.first();
+    const recallVote = this.recallVoteTable.get(member.N + stringToU64(electionName));
+    check(recallVote !== null, "Recall vote not found");
+    check(currentTime > recallVote!.endTime, "Recall voting period has not ended yet");
+
+    // If member is retained, update status and return
+    if (recallVote!.replaceVotes < recallVote!.keepVotes) {
+      recallVote!.status = "retained";
+      this.recallVoteTable.update(recallVote!, this.receiver);
+      return;
+    }
+
+    // ✅ Remove recalled council member
+    const winnersTableEntry = this.winnersTable.get(member.N + stringToU64(electionName));
+    const councilTableEntry = this.councilTable.get(member.N);
+    check(winnersTableEntry !== null && councilTableEntry !== null, "Council member not found for recall");
+
+    const removedRank: u8 = winnersTableEntry!.rank;
+    this.winnersTable.remove(winnersTableEntry!);
+    this.councilTable.remove(councilTableEntry!);
+
+    // ✅ Find next highest-voted candidate (not already in council)
+    let highestVotedCandidate: CandidatesTable |   null = null;
+    let cursor = this.candidatesTable.first();
+
     while (cursor !== null) {
-	    recallVotes.push(cursor);
-	    cursor = this.recallVoteTable.next(cursor);
+      if (stringToU64(cursor.electionName) === stringToU64(electionName)) {
+        if (cursor.account.N !== member.N && 
+        this.winnersTable.get(cursor.account.N + stringToU64(electionName)) === null) {
+          if (highestVotedCandidate === null ||    cursor.totalVotes > highestVotedCandidate.totalVotes) {
+            highestVotedCandidate = cursor;
+          }
+        }
+      }
+      cursor = this.candidatesTable.next(cursor);
     }
 
-    check(recallVotes.length > 0, "No recall votes found");
-
-    // ✅ Step 2: Process each recall vote entry
-    for (let i = 0; i < recallVotes.length; i++) {
-	   let recallVote = recallVotes[i];
-
-	   if (stringToU64(electionName.toLowerCase().toString()) === stringToU64(recallVote.electionName.toLowerCase().toString())) {
-		  check(currentTime > recallVote.endTime, "Recall voting period has not ended yet");
-
-		  // ✅ Ensure the recall vote supports replacing the member
-      if (recallVote.replaceVotes < recallVote.keepVotes) {
-        recallVote.status = "retained";
-        this.recallVoteTable.update(recallVote, this.receiver);
-        return;
-      }
-
-      let winnersTableEntry = this.winnersTable.get(recallVote.councilMember.N + stringToU64(electionName));
-      let councilTableEntry = this.councilTable.get(recallVote.councilMember.N)
-      check(winnersTableEntry !== null && councilTableEntry !== null, "Council member not found for recall");
-
-			let removedRank: u8 = 0;
-			if (winnersTableEntry !== null && councilTableEntry !== null) {
-				removedRank = winnersTableEntry.rank;
-				this.winnersTable.remove(winnersTableEntry);
-        this.councilTable.remove(councilTableEntry);
-			}
-
-			// ✅ Step 3: Collect all candidates in an array
-			let candidates: CandidatesTable[] = [];
-			let cursor2 = this.candidatesTable.first();
-			while (cursor2 !== null) {
-				if (stringToU64(cursor2.electionName) === stringToU64(electionName)) {
-					candidates.push(cursor2);
-				}
-				cursor2 = this.candidatesTable.next(cursor2);
-			}
-
-      check(candidates.length > 0, "No candidates found for this election");
-
-			// ✅ Step 4: Find the next highest-voted candidate
-			let highestVotedCandidate: CandidatesTable | null = null;
-			for (let j = 0; j < candidates.length; j++) {
-				let candidate = candidates[j];
-
-        if (candidate.account.N === recallVote.councilMember.N) {
-          continue;
-        }
-
-        let isAlreadyCouncil = this.winnersTable.get(candidate.account.N + stringToU64(electionName));
-
-        if (isAlreadyCouncil !== null) {
-          continue;
-        }
-
-        if (highestVotedCandidate === null || candidate.totalVotes > highestVotedCandidate.totalVotes) {
-          highestVotedCandidate = candidate;
-        }
-        
-			}
-
-      if (highestVotedCandidate === null) {
-        recallVote.status = "retained";
-        this.recallVoteTable.update(recallVote, this.receiver);
-        return;
-      }
-
-			// ✅ Step 5: Store the new council member with the correct rank
-			if (highestVotedCandidate !== null) {
-				let newWinner = new WinnersTable(
-					highestVotedCandidate.account,
-          highestVotedCandidate.userName,
-					highestVotedCandidate.totalVotes,
-					electionName,
-					removedRank
-				);
-				this.winnersTable.update(newWinner, this.receiver);
-
-        let newCouncil = new CouncilTable(
-					highestVotedCandidate.account,
-          highestVotedCandidate.userName,
-          false,
-					removedRank,
-          currentTime
-				);
-				this.councilTable.update(newCouncil, this.receiver);
-			}
-
-      recallVote.status = "recalled";
-      this.recallVoteTable.update(recallVote, this.receiver);
-	   }
+    // If no valid replacement, retain the member
+    if (highestVotedCandidate === null) {
+      recallVote!.status = "retained";
+      this.recallVoteTable.update(recallVote!, this.receiver);
+      return;
     }
+
+    // ✅ Promote new council member
+    const newWinner = new WinnersTable(
+      highestVotedCandidate.account,
+      highestVotedCandidate.userName,
+      highestVotedCandidate.totalVotes,
+      electionName,
+      removedRank
+    );
+    this.winnersTable.update(newWinner, this.receiver);
+
+    const newCouncil = new CouncilTable(
+      highestVotedCandidate.account,
+      highestVotedCandidate.userName,
+      false,
+      electionName,
+      removedRank,
+      currentTime
+    );
+    this.councilTable.update(newCouncil, this.receiver);
+
+    // ✅ Update recall vote status
+    recallVote!.status = "recalled";
+    this.recallVoteTable.update(recallVote!, this.receiver);
   }
 
   // action to apply as moderator role
@@ -988,14 +963,14 @@ export class snipvoting extends Contract {
 
     this.proposalsTable.store(newProposal, this.receiver);
 
-    let winnerCursor = this.winnersTable.first();
+    let memberCursor = this.councilTable.first();
     let isMember = false;
-    while (winnerCursor !== null) {
-      if (winnerCursor.winner.N === proposer.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+    while (memberCursor !== null) {
+      if (memberCursor.account.N === proposer.N) {
         isMember = true;
         break;
       }
-      winnerCursor = this.winnersTable.next(winnerCursor);
+      memberCursor = this.councilTable.next(memberCursor);
     }
     if (isMember) {
       this.updatePerformance(proposer, 1, 0, 0, 0);
@@ -1048,14 +1023,14 @@ export class snipvoting extends Contract {
 
     this.propVotersTable.store(newVoter, this.receiver);
 
-    let winnerCursor = this.winnersTable.first();
+    let memberCursor = this.councilTable.first();
     let isMember = false;
-    while (winnerCursor !== null) {
-      if (winnerCursor.winner.N === voter.N && stringToU64(winnerCursor.status) === stringToU64("active")) {
+    while (memberCursor !== null) {
+      if (memberCursor.account.N === voter.N) {
         isMember = true;
         break;
       }
-      winnerCursor = this.winnersTable.next(winnerCursor);
+      memberCursor = this.councilTable.next(memberCursor);
     }
 
     if (isMember) {
@@ -1451,15 +1426,12 @@ export class snipvoting extends Contract {
     // --- get elected members ---
     const elected: Name[] = [];
 
-    let cursor = this.winnersTable.first();
+    let cursor = this.councilTable.first();
     while (cursor !== null) {
-      if (
-        stringToU64(cursor.status) === stringToU64("active") &&
-        cursor.isFoundingMember === false
-      ) {
-        elected.push(cursor.winner);
+      if ( cursor.isFoundingMember === false ) {
+        elected.push(cursor.account);
       }
-      cursor = this.winnersTable.next(cursor);
+      cursor = this.councilTable.next(cursor);
     }
 
     check(elected.length > 0, "No active elected members found");

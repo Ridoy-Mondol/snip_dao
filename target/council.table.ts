@@ -1,46 +1,45 @@
 import * as _chain from "as-chain";
 import { Name, Table } from "proton-tsc";
-import { stringToU64 } from '../utils';
 
 
 
-export class WinnersTableDB extends _chain.MultiIndex<WinnersTable> {
+export class CouncilTableDB extends _chain.MultiIndex<CouncilTable> {
 
 }
 
-@table('winners', nocodegen)
+@table('council', nocodegen)
 
-export class WinnersTable implements _chain.MultiIndexValue {
+export class CouncilTable implements _chain.MultiIndexValue {
     
 
     constructor (
-        public winner: Name = new Name(),
-        public userName: string = "", 
-        public totalVotes: u64 = 0,
+        public account: Name = new Name(),
+        public userName: string = "",
+        public isFoundingMember: boolean = false,
         public electionName: string = "",
         public rank: u8 = 0,
-        public status: string = "active" // "active", "expired"
+        public startedAt: u64 = 0, 
     ) {
         
     }
 
     @primary
-    get by_winner_and_election(): u64 {
-        return this.winner.N + stringToU64(this.electionName);
+    get by_account(): u64 {
+        return this.account.N;
     }
 
-    set by_winner_and_election(value: u64) {
-        
+    set by_account(value: u64) {
+        this.account = Name.fromU64(value);
     }
 
     pack(): u8[] {
         let enc = new _chain.Encoder(this.getSize());
-        enc.pack(this.winner);
+        enc.pack(this.account);
         enc.packString(this.userName);
-        enc.packNumber<u64>(this.totalVotes);
+        enc.packNumber<boolean>(this.isFoundingMember);
         enc.packString(this.electionName);
         enc.packNumber<u8>(this.rank);
-        enc.packString(this.status);
+        enc.packNumber<u64>(this.startedAt);
         return enc.getBytes();
     }
     
@@ -50,29 +49,29 @@ export class WinnersTable implements _chain.MultiIndexValue {
         {
             let obj = new Name();
             dec.unpack(obj);
-            this.winner = obj;
+            this.account = obj;
         }
         this.userName = dec.unpackString();
-        this.totalVotes = dec.unpackNumber<u64>();
+        this.isFoundingMember = dec.unpackNumber<boolean>();
         this.electionName = dec.unpackString();
         this.rank = dec.unpackNumber<u8>();
-        this.status = dec.unpackString();
+        this.startedAt = dec.unpackNumber<u64>();
         return dec.getPos();
     }
 
     getSize(): usize {
         let size: usize = 0;
-        size += this.winner.getSize();
+        size += this.account.getSize();
         size += _chain.Utils.calcPackedStringLength(this.userName);
-        size += sizeof<u64>();
+        size += sizeof<boolean>();
         size += _chain.Utils.calcPackedStringLength(this.electionName);
         size += sizeof<u8>();
-        size += _chain.Utils.calcPackedStringLength(this.status);
+        size += sizeof<u64>();
         return size;
     }
 
     static get tableName(): _chain.Name {
-        return _chain.Name.fromU64(0xE3A7355F00000000);
+        return _chain.Name.fromU64(0x4535343A20000000);
     }
 
     static tableIndexes(code: _chain.Name, scope: _chain.Name): _chain.IDXDB[] {
@@ -83,15 +82,15 @@ export class WinnersTable implements _chain.MultiIndexValue {
     }
 
     getTableName(): _chain.Name {
-        return WinnersTable.tableName;
+        return CouncilTable.tableName;
     }
 
     getTableIndexes(code: _chain.Name, scope: _chain.Name): _chain.IDXDB[] {
-        return WinnersTable.tableIndexes(code, scope);
+        return CouncilTable.tableIndexes(code, scope);
     }
 
     getPrimaryValue(): u64 {
-        return this.by_winner_and_election
+        return this.by_account
     }
 
     getSecondaryValue(i: i32): _chain.SecondaryValue {
@@ -104,7 +103,7 @@ export class WinnersTable implements _chain.MultiIndexValue {
     }
 
 
-    static new(code: _chain.Name, scope: _chain.Name  = _chain.EMPTY_NAME): WinnersTableDB {
-        return new WinnersTableDB(code, scope, this.tableName, this.tableIndexes(code, scope));
+    static new(code: _chain.Name, scope: _chain.Name  = _chain.EMPTY_NAME): CouncilTableDB {
+        return new CouncilTableDB(code, scope, this.tableName, this.tableIndexes(code, scope));
     }
-} 
+}

@@ -7,6 +7,7 @@ export class CouncilTable extends Table {
         public account: Name = new Name(),
         public userName: string = "",
         public isFoundingMember: boolean = false,
+        public electionName: string = "",
         public rank: u8 = 0,
         public startedAt: u64 = 0, 
     ) {
