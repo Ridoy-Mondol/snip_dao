@@ -971,6 +971,11 @@
       "fields": []
     },
     {
+      "name": "clrlastelc",
+      "base": "",
+      "fields": []
+    },
+    {
       "name": "clrmodcand",
       "base": "",
       "fields": []
@@ -1551,6 +1556,11 @@
     {
       "name": "clrfundvote",
       "type": "clrfundvote",
+      "ricardian_contract": ""
+    },
+    {
+      "name": "clrlastelc",
+      "type": "clrlastelc",
       "ricardian_contract": ""
     },
     {

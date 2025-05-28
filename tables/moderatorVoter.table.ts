@@ -1,4 +1,5 @@
 import { Name, Table } from "proton-tsc";
+import { stringToU64 } from '../utils';
 
 @table('modvoters')
 export class ModeratorVotersTable extends Table {
@@ -14,12 +15,12 @@ export class ModeratorVotersTable extends Table {
 
     @primary
     get by_voter_and_candidate(): u64 {
-        return (this.voter.N << 32) | (this.votedCandidate.N & 0xFFFFFFFF);
+        return stringToU64(`[[${this.voter.toString()}]]--::--{{${this.votedCandidate.toString()}}}`);   
+        // I did this because here voter and candidate pair should be unique and no hash collision. some issues arises previously so I did this
     }
 
     set by_voter_and_candidate(value: u64) {
-        this.voter = Name.fromU64(value >> 32);
-        this.votedCandidate = Name.fromU64(value & 0xFFFFFFFF);
+
     }
 
 }

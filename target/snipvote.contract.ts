@@ -206,6 +206,18 @@ export class snipvoting extends Contract {
     }
   }
 
+  @action("clrlastelc")
+  clearLastElc(): void {
+
+    // Clear Recall Votes Table
+    let cursor5 = this.electionsTable.last();
+    while (cursor5 !== null) {
+        this.electionsTable.remove(cursor5);
+        cursor5 = null;
+    }
+
+  }
+
   @action("clearrecall")
   clearRecall(): void {
 
@@ -311,8 +323,8 @@ export class snipvoting extends Contract {
 
       if (election && election.candidateStakeAmount > 0) {
         let userStake = this.accountTable.get(account.N);
-        check(userStake !== null, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
-        check(( userStake!.totalStaked / 10000 ) >= election.candidateStakeAmount, `Minimum ${election.candidateStakeAmount} tokens required to register as a candidate`);
+        check(userStake !== null, `You need to stake at least ${election.candidateStakeAmount} SNIPS to register as a candidate`);
+        check(( userStake!.totalStaked / 10000 ) >= election.candidateStakeAmount, `You need to stake at least ${election.candidateStakeAmount} SNIPS to register as a candidate`);
       }
       
       let existingCandidate = this.candidatesTable.get(account.N + stringToU64(electionName));
@@ -389,9 +401,9 @@ export class snipvoting extends Contract {
 
       if (election && election.voterStakeAmount > 0) {
         let voterStake = this.accountTable.get(voter.N);
-        check(voterStake !== null, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
+        check(voterStake !== null, `You need to stake at least ${election.voterStakeAmount} SNIPS to participate in voting.`);
     
-        check(( voterStake!.totalStaked / 10000 ) >= election.voterStakeAmount, `Minimum ${election.voterStakeAmount} tokens required to participate in voting`);
+        check(( voterStake!.totalStaked / 10000 ) >= election.voterStakeAmount, `You need to stake at least ${election.voterStakeAmount} SNIPS to participate in voting.`);
       }
     
       let candidateData = this.candidatesTable.get(candidate.N + stringToU64(electionName));
@@ -458,8 +470,9 @@ export class snipvoting extends Contract {
       // Clear previous council members
       let councilCursor = this.councilTable.first();
       while (councilCursor !== null) {
+        let nextCursor = this.councilTable.next(councilCursor);
         this.councilTable.remove(councilCursor);
-        councilCursor = this.councilTable.next(councilCursor);
+        councilCursor = nextCursor;
       }
       
       // Get all candidates
@@ -723,14 +736,14 @@ export class snipvoting extends Contract {
     this.winnersTable.remove(winnersTableEntry!);
     this.councilTable.remove(councilTableEntry!);
 
-    // ✅ Find next highest-voted candidate (not already in council)
+    // ✅ Find next highest-voted candidate (not already in council and not recalled previously)
     let highestVotedCandidate: CandidatesTable |   null = null;
     let cursor = this.candidatesTable.first();
 
     while (cursor !== null) {
       if (stringToU64(cursor.electionName) === stringToU64(electionName)) {
         if (cursor.account.N !== member.N && 
-        this.winnersTable.get(cursor.account.N + stringToU64(electionName)) === null) {
+        this.winnersTable.get(cursor.account.N + stringToU64(electionName)) === null && this.recallVoteTable.get(cursor.account.N + stringToU64(electionName)) === null) {
           if (highestVotedCandidate === null ||    cursor.totalVotes > highestVotedCandidate.totalVotes) {
             highestVotedCandidate = cursor;
           }
@@ -746,7 +759,7 @@ export class snipvoting extends Contract {
       return;
     }
 
-    // ✅ Promote new council member
+    // ✅ store new council member
     const newWinner = new WinnersTable(
       highestVotedCandidate.account,
       highestVotedCandidate.userName,
@@ -754,7 +767,7 @@ export class snipvoting extends Contract {
       electionName,
       removedRank
     );
-    this.winnersTable.update(newWinner, this.receiver);
+    this.winnersTable.store(newWinner, this.receiver);
 
     const newCouncil = new CouncilTable(
       highestVotedCandidate.account,
@@ -764,7 +777,7 @@ export class snipvoting extends Contract {
       removedRank,
       currentTime
     );
-    this.councilTable.update(newCouncil, this.receiver);
+    this.councilTable.store(newCouncil, this.receiver);
 
     // ✅ Update recall vote status
     recallVote!.status = "recalled";
@@ -778,13 +791,14 @@ export class snipvoting extends Contract {
 
      let currentTime = currentTimeSec();
 
-    //  let userStake = this.accountTable.get(account.N);
-    //  check(userStake !== null, `Minimum 1,000,000 tokens required to apply as a moderator`);
-    //  check(( userStake!.totalStaked / 10000 ) >= 1000000, `Minimum 1,000,000 tokens required to apply as a moderator`);
+     let userStake = this.accountTable.get(account.N);
+     check(userStake !== null, `You need to stake at least 1,000,000 SNIPS to apply as a moderator`);
+     check(( userStake!.totalStaked / 10000 ) >= 1000000, `You need to stake at least 1,000,000 SNIPS to apply as a moderator`);
      
      let existingCandidate = this.moderatorCandTable.get(account.N);
 
-     check(existingCandidate === null, "Candidate already applied");
+     check(existingCandidate === null, 'You\'ve previously applied as a moderator candidate.'
+     );
      
      let newCandidate = new ModeratorCandTable(
        account,
@@ -809,7 +823,9 @@ export class snipvoting extends Contract {
      const isValidVoter = this.councilTable.get(voter.N);
      check(isValidVoter !== null, "Only council members can vote");
 
-     let voterExist = this.moderatorVotersTable.get((voter.N << 32) | (candidate.N & 0xFFFFFFFF));
+     let voterExist = this.moderatorVotersTable.get(
+       stringToU64(`[[${voter.toString()}]]--::--{{${candidate.toString()}}}`)
+     );
      check(voterExist === null, "You have already voted for this candidate");
 
      let candidateData = this.moderatorCandTable.get(candidate.N);
@@ -985,8 +1001,8 @@ export class snipvoting extends Contract {
     
     if (config!.proposalStake > 0) {
       let userStake = this.accountTable.get(proposer.N);
-      check(userStake !== null, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
-      check((userStake!.totalStaked / 10000) >= config!.proposalStake, `Minimum ${config!.proposalStake} tokens required to submit proposal`);
+      check(userStake !== null, `You need to stake at least ${config!.proposalStake} SNIPS to submit a proposal.`);
+      check((userStake!.totalStaked / 10000) >= config!.proposalStake, `You need to stake at least ${config!.proposalStake} SNIPS to submit a proposal.`);
     }
 
     check(deadline > currentTimeSec(), "Deadline must be in the future");
@@ -1040,8 +1056,8 @@ export class snipvoting extends Contract {
     
     if (config!.voteStake > 0) {
       let userStake = this.accountTable.get(voter.N);
-      check(userStake !== null, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
-      check((userStake!.totalStaked / 10000) >= config!.voteStake, `Minimum ${config!.voteStake} tokens required to vote in proposal`);
+      check(userStake !== null, `You need to stake at least ${config!.voteStake} SNIPS to vote on a proposal.`);
+      check((userStake!.totalStaked / 10000) >= config!.voteStake, `You need to stake at least ${config!.voteStake} SNIPS to vote on a proposal.`);
     }
 
     const now = currentTimeSec();
@@ -1485,7 +1501,7 @@ export class snipvoting extends Contract {
 
     while (lastRecord !== null) {
       const now = currentTimeSec();
-      const oneMonthInSeconds = 1 * 1 * 5 * 60;
+      const oneMonthInSeconds = 30 * 24 * 60 * 60;
 
       check(
         now - lastRecord.timestamp >= oneMonthInSeconds, "Revenue can only be distributed once every 30 days"
@@ -1699,6 +1715,27 @@ class createElectionAction implements _chain.Packer {
 }
 
 class clearAllTablesAction implements _chain.Packer {
+    constructor (
+    ) {
+    }
+
+    pack(): u8[] {
+        let enc = new _chain.Encoder(this.getSize());
+        return enc.getBytes();
+    }
+    
+    unpack(data: u8[]): usize {
+        let dec = new _chain.Decoder(data);
+        return dec.getPos();
+    }
+
+    getSize(): usize {
+        let size: usize = 0;
+        return size;
+    }
+}
+
+class clearLastElcAction implements _chain.Packer {
     constructor (
     ) {
     }
@@ -2970,6 +3007,11 @@ export function apply(receiver: u64, firstReceiver: u64, action: u64): void {
             const args = new clearAllTablesAction();
             args.unpack(actionData);
             mycontract.clearAllTables();
+        }
+		if (action == 0x446F13632A8A0000) {//clrlastelc
+            const args = new clearLastElcAction();
+            args.unpack(actionData);
+            mycontract.clearLastElc();
         }
 		if (action == 0x44546BDD48346200) {//clearrecall
             const args = new clearRecallAction();
